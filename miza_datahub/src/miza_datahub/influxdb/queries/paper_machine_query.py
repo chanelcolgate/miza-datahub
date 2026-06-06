@@ -36,7 +36,8 @@ class PaperMachineRepository(InfluxRepository):
                 mean("nominal_speed")
                 * 4.8
                 * mean("nominal_basic_weight")
-            ) / 1000000 AS ton_per_min
+                * mean("nominal_efficiency")
+            ) / 100000000 AS ton_per_min
             FROM miza_realtime
             WHERE
                 line='Máy giấy PM3'
@@ -85,7 +86,8 @@ class PaperMachineRepository(InfluxRepository):
                 mean("nominal_speed")
                 * 4.8
                 * mean("nominal_basic_weight")
-            ) / 1000000 AS ton_per_min
+                * mean("nominal_efficiency")
+            ) / 100000000 AS ton_per_min
             FROM miza_realtime
             WHERE
                 line='Máy giấy PM3'

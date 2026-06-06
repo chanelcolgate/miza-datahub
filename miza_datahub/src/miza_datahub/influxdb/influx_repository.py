@@ -7,3 +7,9 @@ class InfluxRepository:
 
     def write(self, line_protocol):
         return self.client.write(line_protocol)
+
+    @staticmethod
+    def escape_string(string):
+        return string.translate(
+            string.maketrans({",": "\,", " ": "\ ", "=": "\="})
+        )

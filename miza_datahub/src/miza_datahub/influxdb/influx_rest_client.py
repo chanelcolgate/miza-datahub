@@ -18,7 +18,7 @@ class InfluxRestClient:
     def write(self, payload: str):
         response = requests.post(
             self.write_url,
-            params={"db": self.database, "presision": "s"},
+            params={"db": self.database, "precision": "s"},
             data=payload,
         )
 

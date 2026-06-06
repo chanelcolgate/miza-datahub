@@ -8,12 +8,15 @@ from fastapi import FastAPI
 from miza_datahub.readers.finished_product_quality_analyzer import (
     FinishedProductQualityAnalyzer,
 )
-from miza_datahub.influxdb.queries.paper_machine_query import PaperMachineRepository
 from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
+from miza_datahub.services.oee_service import OEEService
+from miza_datahub.influxdb.queries.paper_machine_query import PaperMachineRepository
+from miza_datahub.influxdb.writers.paper_daily_oee_writer import PaperDailyOEEWriter
 
 app = FastAPI()
 influx = InfluxRestClient("192.168.10.2", 8090, "miza_new")
 paper = PaperMachineRepository(influx)
+paper_oee = PaperDailyOEEWriter(influx)
 
 
 @app.post("/excel")
@@ -37,33 +40,12 @@ def read_excel(data: dict):
             "%Y-%m-%dT00:00:00Z"
         ),
     )
+    df_final = OEEService.calculate_pq(actual, plan, df_quality)
+    paper_oee.write_pq(df_final)
 
-    df_actual = pd.DataFrame(actual, columns=["time", "actual"])
-    df_actual["production_day"] = (
-        pd.to_datetime(df_actual["time"]).dt.tz_localize(None).dt.date
-    )
-    df_actual["production_day"] = pd.to_datetime(df_actual["production_day"])
-
-    df_plan = pd.DataFrame(plan, columns=["time", "plan"])
-    df_plan["production_day"] = (
-        pd.to_datetime(df_plan["time"]).dt.tz_localize(None).dt.date
-    )
-    df_plan["production_day"] = pd.to_datetime(df_plan["production_day"])
-
-    df_final = (
-        df_actual[["production_day", "actual"]]
-        .merge(df_quality[["production_day", "B"]], on="production_day", how="outer")
-        .merge(df_plan[["production_day", "plan"]], on="production_day", how="left")
-    )
-
-    df_final["P"] = (df_final["actual"] / df_final["plan"] * 100).round(2)
-    df_final["Q"] = (
-        (df_final["actual"] - df_final["B"] / 1000) / df_final["actual"] * 100
-    ).round(2)
-
-    df_final = df_final.replace([np.inf, -np.inf], np.nan)
-
-    df_final = df_final.astype(object)
-    df_final = df_final.where(pd.notnull(df_final), None)
-    print(df_final)
     return df_final.to_dict(orient="records")
+
+
+@app.get("/daily")
+def get_daily_oee(date: str):
+    pass
