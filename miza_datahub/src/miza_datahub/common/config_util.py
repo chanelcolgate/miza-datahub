@@ -59,3 +59,14 @@ class ConfigUtil(metaclass=Singleton):
         return self._get_config(force_reload).getfloat(
             section, key, fallback=default_val
         )
+
+    def get_int(
+        self,
+        section: str,
+        key: str,
+        default_val: int = 0,
+        force_reload: bool = False,
+    ):
+        return self._get_config(force_reload).getint(
+            section, key, fallback=default_val
+        )

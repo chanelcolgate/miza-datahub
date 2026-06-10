@@ -75,7 +75,10 @@ class PaperMachineRepository(InfluxRepository):
         """
 
         result = self.query(query)
-        return result["results"][0]["series"][0]["values"]
+        # {'results': [{'statement_id': 0}]}
+        if "series" in result["results"][0]:
+            return result["results"][0]["series"][0]["values"]
+        return []
 
     def get_plan_production_daily(self, start_time: str, end_time: str):
         query = f"""
@@ -102,4 +105,6 @@ class PaperMachineRepository(InfluxRepository):
         """
 
         result = self.query(query)
-        return result["results"][0]["series"][0]["values"]
+        if "series" in result["results"][0]:
+            return result["results"][0]["series"][0]["values"]
+        return []

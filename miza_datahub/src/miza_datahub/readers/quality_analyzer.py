@@ -4,9 +4,16 @@ import numpy as np
 import pandas as pd
 
 from miza_datahub.readers.base_reader import BaseReader
+from miza_datahub.influxdb.queries.paper_machine_query import (
+    PaperMachineRepository,
+)
+from miza_datahub.influxdb.writers.paper_daily_oee_writer import (
+    PaperDailyOEEWriter,
+)
+from miza_datahub.services.oee_service import OEEService
 
 
-class FinishedProductQualityAnalyzer(BaseReader):
+class QualityAnalyzer(BaseReader):
     def load(self):
         df = pd.read_excel(
             BytesIO(self.file_bytes),
@@ -73,6 +80,33 @@ class FinishedProductQualityAnalyzer(BaseReader):
         df = df.set_index(["Thời điểm ra quả xeo", "Mã cuộn", "Ngày cắt cuộn"])
         # df["Mã quả Xeo"] = df["Mã quả Xeo"].astype(np.uint32)
         self.df = df
+
+    def write(self):
+        self.load()
+        df_quality = self.calculate_defect_weight()
+
+        paper = PaperMachineRepository(self.influx)
+        paper_oee = PaperDailyOEEWriter(self.influx)
+
+        actual = paper.get_actual_production_daily(
+            start_time=(df_quality["production_day"].min()).strftime(
+                "%Y-%m-%dT00:00:00Z"
+            ),
+            end_time=(
+                df_quality["production_day"].max() + pd.Timedelta(days=1)
+            ).strftime("%Y-%m-%dT00:00:00Z"),
+        )
+
+        plan = paper.get_plan_production_daily(
+            start_time=(df_quality["production_day"].min()).strftime(
+                "%Y-%m-%dT00:00:00Z"
+            ),
+            end_time=(
+                df_quality["production_day"].max() + pd.Timedelta(days=1)
+            ).strftime("%Y-%m-%dT00:00:00Z"),
+        )
+        df_final = OEEService.calculate_pq(actual, plan, df_quality)
+        paper_oee.write_pq(df_final)
 
     def calculate_defect_weight(self):
         time_idx = self.df.index.get_level_values("Thời điểm ra quả xeo")

@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
 import requests
-import pandas as pd
 
 from miza_datahub.common.config_util import ConfigUtil
 from miza_datahub.common import config_const as ConfigConst
+from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
 
 
 class BaseReader(ABC):
@@ -30,6 +30,30 @@ class BaseReader(ABC):
             )
         ).content
 
-        @abstractmethod
-        def load(self):
-            pass
+        # InfluxDB
+        influx_host = config_util.get_property(
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_HOST
+        )
+        influx_port = config_util.get_int(
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_PORT
+        )
+        influx_db = config_util.get_property(
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_DB
+        )
+        self.influx = InfluxRestClient(influx_host, influx_port, influx_db)
+
+    @abstractmethod
+    def load(self):
+        pass
+
+    @abstractmethod
+    def write(self):
+        pass
+
+
+class TempReader(BaseReader):
+    def load(self):
+        pass
+
+    def write(self):
+        pass
