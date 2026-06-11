@@ -1,5 +1,3 @@
-from calendar import monthrange
-
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
@@ -26,13 +24,13 @@ class ProductionTimeQuery(InfluxRepository):
         return result["results"][0]["series"][0]["values"]
 
     def get_production_down_time(self, date: str, group_by: str):
-        proudct_time = ""
+        product_time = ""
         if group_by == "1d":
             product_time = "1440"
         elif group_by == "1h":
             product_time = "60"
 
-        query = """
+        query = f"""
         SELECT {product_time} - sum("cnt")
         FROM (
             SELECT

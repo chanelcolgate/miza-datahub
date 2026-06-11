@@ -19,15 +19,14 @@ class PaperDailyOEEWriter(InfluxRepository):
             "% Chất lượng": "Q",
             "OEE": "OEE",
         }
-        print(df.columns.tolist())
 
         for _, row in df.iterrows():
             timestamp = int(row["production_day"].timestamp())
 
             tags = [
                 f"factory={PaperDailyOEEWriter.escape_string('MIZA Nghi Sơn')}",
-                f"line=PM3",
-                f"machine=Scanner",
+                "line=PM3",
+                "machine=Scanner",
             ]
 
             values = [
@@ -36,7 +35,11 @@ class PaperDailyOEEWriter(InfluxRepository):
                 if pd.notna(row[df_field])
             ]
 
-            line = f'{self.MEASUREMENT},{",".join(tags)} {",".join(values)} {timestamp}'
+            line = (
+                f'{self.MEASUREMENT},{",".join(tags)} '
+                f'{",".join(values)} '
+                f"{timestamp}"
+            )
 
             lines.append(line)
 
@@ -57,8 +60,8 @@ class PaperDailyOEEWriter(InfluxRepository):
 
             tags = [
                 f"factory={PaperDailyOEEWriter.escape_string('MIZA Nghi Sơn')}",
-                f"line=PM3",
-                f"machine=Scanner",
+                "line=PM3",
+                "machine=Scanner",
             ]
 
             values = [
@@ -67,7 +70,11 @@ class PaperDailyOEEWriter(InfluxRepository):
                 if pd.notna(row[df_field])
             ]
 
-            line = f'{self.MEASUREMENT},{",".join(tags)} {",".join(values)} {timestamp}'
+            line = (
+                f'{self.MEASUREMENT},{",".join(tags)} '
+                f'{",".join(values)} '
+                f"{timestamp}"
+            )
             lines.append(line)
 
         self.client.write("\n".join(lines))

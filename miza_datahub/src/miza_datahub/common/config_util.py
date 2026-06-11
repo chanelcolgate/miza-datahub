@@ -11,7 +11,7 @@ class ConfigUtil(metaclass=Singleton):
     config_parser = configparser.ConfigParser()
     is_loaded = False
 
-    def __init__(self, config_file: str = None) -> None:
+    def __init__(self, config_file: str | None = None) -> None:
         if config_file is not None:
             self.config_file = config_file
 
@@ -32,7 +32,9 @@ class ConfigUtil(metaclass=Singleton):
 
         logging.debug(f"Config: {self.config_parser.sections()}")
 
-    def _get_config(self, force_reload: bool = False) -> config_parser:
+    def _get_config(
+        self, force_reload: bool = False
+    ) -> configparser.ConfigParser:
         if not self.is_loaded or force_reload:
             self._load_config()
 
@@ -42,7 +44,7 @@ class ConfigUtil(metaclass=Singleton):
         self,
         section: str,
         key: str,
-        default_val: str = None,
+        default_val: str | None = None,
         force_reload: bool = False,
     ):
         return self._get_config(force_reload).get(

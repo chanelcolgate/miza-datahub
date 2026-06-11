@@ -1,6 +1,6 @@
 from io import BytesIO
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 
 from miza_datahub.readers.base_reader import BaseReader
@@ -107,6 +107,7 @@ class QualityAnalyzer(BaseReader):
         )
         df_final = OEEService.calculate_pq(actual, plan, df_quality)
         paper_oee.write_pq(df_final)
+        return True
 
     def calculate_defect_weight(self):
         time_idx = self.df.index.get_level_values("Thời điểm ra quả xeo")

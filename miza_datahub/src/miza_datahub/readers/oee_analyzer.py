@@ -68,3 +68,4 @@ class OEEAnalyzer(BaseReader):
         self.load()
         paper_oee = PaperDailyOEEWriter(self.influx)
         paper_oee.write_apq(self.df)
+        return True

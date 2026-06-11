@@ -1,33 +1,44 @@
+import shutil
 from io import BytesIO
+from pathlib import Path
 
 import requests
 import pandas as pd
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 
-from miza_datahub.readers.quality_analyzer import (
-    QualityAnalyzer,
-)
-from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
-from miza_datahub.influxdb.queries.paper_machine_query import PaperMachineRepository
-from miza_datahub.influxdb.writers.paper_daily_oee_writer import PaperDailyOEEWriter
-from miza_datahub.services.oee_service import OEEService
 from miza_datahub.services.reader_factory import ReaderFactory
 
 app = FastAPI()
-influx = InfluxRestClient("192.168.10.2", 8090, "miza_new")
-paper = PaperMachineRepository(influx)
-paper_oee = PaperDailyOEEWriter(influx)
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-@app.post("/excel")
+@app.post("/excel/read")
 def read_excel(data: dict):
     file_id = data["file_id"]
 
-    production = ReaderFactory.create(file_id)
+    production = ReaderFactory.create(file_id=file_id)
     production.write()
 
-    return {"result": "ok"}
+    return {"status": "success"}
+
+
+@app.post("/excel/upload")
+def save_excel(file: UploadFile = File(...)):
+    if not file.filename.endswith((".xlsx", ".xls")):
+        return {"error": "Only Excel files are allowed"}
+
+    file_path = UPLOAD_DIR / file.filename
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    production = ReaderFactory.create(file_path=file_path)
+    production.write()
+
+    return {"status": "success", "filename": file.filename, "path": str(file_path)}
 
 
 @app.get("/daily")

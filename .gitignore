@@ -11,3 +11,4 @@ wheels/
 node_modules/
 package-lock.json
 *.props
+uploads/

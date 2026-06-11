@@ -1,0 +1,37 @@
+---
+title: Enterprise Traceability Model
+---
+classDiagram
+
+class Customer
+class ProductionOrder
+class PaperGrade
+class JumboRoll
+class FinishedRoll
+class QualityResult
+class QualityDefect
+class PulpConsumption
+class EnergyConsumption
+class ProductionEvent
+class Equipment
+class MaintenanceRecord
+
+
+Customer "1" --> "*" ProductionOrder
+PaperGrade "1" --> "*" ProductionOrder
+
+ProductionOrder "1" --> "*" JumboRoll
+
+JumboRoll "1" --> "1" PulpConsumption
+JumboRoll "1" --> "1" EnergyConsumption
+JumboRoll "1" --> "1" OEERecord
+
+JumboRoll "1" --> "*" ProductionEvent
+ProductionEvent "*" --> "1" Equipment
+
+Equipment "1" --> "*" MaintenanceRecord
+
+JumboRoll "1" --> "*" FinishedRoll
+
+FinishedRoll "1" --> "1" QualityResult
+QualityResult "*" --> "*" QualityDefect

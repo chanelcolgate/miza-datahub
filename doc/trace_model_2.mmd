@@ -1,0 +1,127 @@
+---
+title: Enterprise Traceability Model
+---
+classDiagram
+
+class Customer {
+    +string customerId
+    +string customerCode
+    +string customerName
+    +string customerGroup
+    +string country
+    +string address
+}
+class ProductionOrder {
+    +string orderNo
+    +string customer
+    +string paperGrade
+    +float targetTon
+    +datetime startTime
+    +datetime endTime
+}
+class PaperGrade {
+    +string gradeCode
+    +string gradeName
+    +float targetGsm
+    +float targetBurst
+    +float targetMoisture
+}
+class JumboRoll {
+    +string jumboRollId
+    +string reelCode
+    +string PaperGrade
+    +float gsmTarget
+    +float gsmActual
+    +float deckleWidthMm
+    +datetime startTime
+    +datetime endTime
+    +float durationMin
+    +float downtimeMin
+    +float avgMachineSpeed
+    +float totalWeightKg
+}
+class FinishedRoll {
+    +string rollCode
+    +float WidthMm
+    +float lengthM
+    +float weightKg
+    +string qualityGrade
+}
+class QualityResult {
+    +float gsm
+    +float burstStrength
+    +float smoothness
+    +float cobb
+    +float moisture
+    +float colorL
+    +float colorA
+    +float colorB
+    +bool isPass
+}
+class QualityDefect {
+    +string defectCode
+    +string defectName
+    +string severity
+    +string description
+}
+class PulpConsumption {
+    +float longFiberKg
+    +float shortFiberKg
+    +float middleFiberKg
+    +float ukpFiberKg
+    +float brokeKg
+    +float totalFiberKg
+}
+class EnergyConsumption {
+    +float electricityKwh
+    +float steamTon
+    +float waterM3
+    +float compressedAirNm3
+}
+class ProductionEvent {
+    +string eventId
+    +datetime startTime
+    +datetime endTime
+    +float durationMin
+    +string eventType
+    +string rootCause
+}
+class Equipment {
+    +string equipmentId
+    +string equipmentName
+    +string area
+    +string equipmentType
+}
+class MaintenanceRecord {
+    +string workOrder
+    +datetime startTime
+    +datetime endTime
+    +string maintenanceType
+    +string description
+}
+class OEERecord {
+    +float availability
+    +float performance
+    +float quality
+    +float oee
+}
+
+
+Customer "1" --> "*" ProductionOrder
+PaperGrade "1" --> "*" ProductionOrder
+
+ProductionOrder "1" --> "*" JumboRoll
+
+JumboRoll "1" --> "1" PulpConsumption
+JumboRoll "1" --> "1" EnergyConsumption
+JumboRoll "1" --> "1" OEERecord
+
+JumboRoll "1" --> "*" ProductionEvent
+ProductionEvent "*" --> "1" Equipment
+
+Equipment "1" --> "*" MaintenanceRecord
+
+JumboRoll "1" --> "*" FinishedRoll
+
+FinishedRoll "1" --> "1" QualityResult
+QualityResult "*" --> "*" QualityDefect

@@ -13,3 +13,13 @@ python -m ensurepip --upgrade
 pyproject-build
 python -m pip install -e .
 ```
+- Cách test
+```
+python -m pip install pytest
+python -m pytest
+python -m pip install mypy
+python -m mypy
+python -m pip install tox
+tox -e typecheck 
+tox -e lint
+```

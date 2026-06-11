@@ -11,5 +11,5 @@ class InfluxRepository:
     @staticmethod
     def escape_string(string):
         return string.translate(
-            string.maketrans({",": "\,", " ": "\ ", "=": "\="})
+            string.maketrans({",": r"\,", " ": r"\ ", "=": r"\="})
         )

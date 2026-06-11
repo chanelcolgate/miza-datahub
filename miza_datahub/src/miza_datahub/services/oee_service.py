@@ -18,7 +18,7 @@ class OEEService:
         df_actual = OEEService.production_dataframe(actual, "actual")
         df_plan = OEEService.production_dataframe(plan, "plan")
 
-        if not df_quality is None:
+        if df_quality is not None:
             df_quality = pd.DataFrame(columns=["production_day", "B"])
 
         df_final = df_actual.merge(
