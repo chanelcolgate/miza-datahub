@@ -1,0 +1,154 @@
+name: Miza Datahub
+
+on:
+  workflow_dispatch:
+
+jobs:
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tox
+        run: python -m pip install tox
+
+      - name: Run black
+        run: tox -e format
+        working-directory: miza_datahub
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tox
+        run: python -m pip install tox
+
+      - name: Run flake8
+        run: tox -e lint
+        working-directory: miza_datahub
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tox
+        run: python -m pip install tox
+
+      - name: Run mypy
+        run: tox -e typecheck
+        working-directory: miza_datahub
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python:
+          - version: "3.11"
+            toxenv: py311
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python.version }}
+      - name: Install tox
+        run: python -m pip install tox
+      - name: Run pytest
+        run: tox -e ${{ matrix.python.toxenv }}
+        working-directory: miza_datahub
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2022
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build
+        run: python -m pip install build
+
+      - name: Build wheels
+        run: python -m build --wheel
+        working-directory: miza_datahub
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: miza_datahub/wheels/*.whl
+
+  build_source_dist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install build
+        run: python -m pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+        working-directory: miza_datahub
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: miza_datahub/dist/*tar.gz
+
+  publish:
+    name: Publishing package
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - format
+      - lint
+      - typecheck
+      - test
+      - build_wheels
+      - build_source_dist
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p publish-dist
+          find dist -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec cp {} publish-dist/ \;
+
+      - uses: pypa/gh-action-pypi-publish@v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          package_dir: publish-dist
