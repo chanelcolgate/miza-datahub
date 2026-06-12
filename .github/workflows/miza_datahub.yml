@@ -120,7 +120,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          path: miza_datahub/dist/*tar.gz
+          path: miza_datahub/dist/*.tar.gz
 
   publish:
     name: Publishing package
