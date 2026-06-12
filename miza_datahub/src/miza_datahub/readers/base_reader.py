@@ -39,13 +39,13 @@ class BaseReader(ABC):
 
         # InfluxDB
         influx_host = config_util.get_property(
-            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_HOST
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_HOST, default_val="192.168.10.2"
         )
         influx_port = config_util.get_int(
-            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_PORT
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_PORT, default_val=8090
         )
         influx_db = config_util.get_property(
-            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_DB
+            section=ConfigConst.INFLUX, key=ConfigConst.INFLUX_DB, default_val="miza_new"
         )
         self.influx = InfluxRestClient(influx_host, influx_port, influx_db)
 
