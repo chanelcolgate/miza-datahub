@@ -147,7 +147,7 @@ jobs:
           mkdir -p publish-dist
           find dist -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec cp {} publish-dist/ \;
 
-      - uses: pypa/gh-action-pypi-publish@v1
+      - uses: pypa/gh-action-pypi-publish@v1.8.14
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
