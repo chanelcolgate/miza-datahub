@@ -1,6 +1,6 @@
 ## Miza DataHub Library
 
-[![codecov](https://app.codecov.io/gh/chanelcolgate/miza-datahub/tree/develop/graph/badge.svg)](https://codecov.io/gh/chanelcolgate/miza-datahub)
+[![codecov](https://codecov.io/gh/chanelcolgate/miza-datahub/branch/develop/graph/badge.svg)](https://codecov.io/gh/chanelcolgate/miza-datahub)
 ### How to install
 - Cài pip
 ```bash
