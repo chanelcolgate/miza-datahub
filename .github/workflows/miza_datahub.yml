@@ -74,7 +74,7 @@ jobs:
       - name: Run pytest
         run: >
           tox -e ${{ matrix.python.toxenv }} --
-          --cov=src/miza_datahub
+          --cov=miza_datahub
           --cov-report=xml
           --cov-report=term-missing
         working-directory: miza_datahub
