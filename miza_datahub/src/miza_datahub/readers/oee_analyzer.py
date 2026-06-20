@@ -66,6 +66,10 @@ class OEEAnalyzer(BaseReader):
             "% Hiệu suất",
             "OEE",
         ]
+        df_final["Sản lượng"] = pd.to_numeric(
+            df_final["Sản lượng"], errors="coerce"
+        )
+        df_final["% SL"] = pd.to_numeric(df_final["% SL"], errors="coerce")
         df_final["plan"] = np.where(
             df_final["% SL"] > 0,
             df_final["Sản lượng"] / df_final["% SL"],
