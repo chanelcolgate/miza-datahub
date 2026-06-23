@@ -11,4 +11,11 @@ INFLUX_HOST = "host"
 INFLUX_PORT = "port"
 INFLUX_DB = "db"
 
+POSTGRES = "Postgres"
+POSTGRES_HOST = "host"
+POSTGRES_PORT = "port"
+POSTGRES_DB = "db"
+POSTGRES_USERNAME = "username"
+POSTGRES_PASSWORD = "password"
+
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"

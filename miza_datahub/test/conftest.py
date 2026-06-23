@@ -11,6 +11,9 @@ from miza_datahub.influxdb.queries.oee.miza_realtime_query import (
 from miza_datahub.influxdb.queries.oee.paper_daily_oee_query import (
     PaperDailyOEEQuery,
 )
+from miza_datahub.postgres.queries.electricity_consumption_query import (
+    ElectricityConsumptionQuery,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,3 +56,39 @@ def miza_realtime_query(influx):
 @pytest.fixture(scope="session")
 def paper_daily_oee_query(influx):
     return PaperDailyOEEQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def electricity_consumption_query(config_util):
+    postgres_host = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_HOST,
+        default_val="172.26.2.13",
+    )
+    postgres_port = config_util.get_int(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_PORT,
+        default_val=5432,
+    )
+    postgres_db = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_DB,
+        default_val="tb-edge",
+    )
+    username = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_USERNAME,
+        default_val="postgres",
+    )
+    password = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_PASSWORD,
+        default_val="postgres",
+    )
+    return ElectricityConsumptionQuery(
+        host=postgres_host,
+        port=postgres_port,
+        database=postgres_db,
+        username=username,
+        password=password,
+    )
