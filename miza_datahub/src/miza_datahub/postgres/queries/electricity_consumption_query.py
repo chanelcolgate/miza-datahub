@@ -29,7 +29,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (DATE((to_timestamp(h.ts / 1000) - INTERVAL '6 hours')
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -87,7 +87,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('day', to_timestamp(h.ts / 1000 - 21600)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -177,8 +177,8 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     date_trunc('hour', to_timestamp(h.ts / 1000)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'),
-                    'YYYY-MM-DD HH24:MI:SS'
-                ) AS production_hour,
+                    'YYYY-MM-DDTHH24:MI:SS'
+                ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
             FROM hourly_electricity_consumption h
@@ -200,7 +200,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
         }
         return self.query(sql, params)
 
-    def get_montly_consumption_by_device(
+    def get_monthly_consumption_by_device(
         self, month: int, year: int
     ) -> List[Dict[str, Any]]:
         """
@@ -238,7 +238,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('month', to_timestamp(h.ts / 1000 - 21600)
                     AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                    + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
+                    + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -247,7 +247,6 @@ class ElectricityConsumptionQuery(PostgresRepository):
             WHERE
                 h.ts >= :start_timestamp
                 AND h.ts < :end_timestamp
-                AND d.name = 'Meter XLNT 2'
             GROUP BY
                 1, d.id, 2
             ORDER BY
@@ -291,7 +290,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('year', to_timestamp(h.ts / 1000 - 21600)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
