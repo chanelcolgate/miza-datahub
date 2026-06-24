@@ -29,7 +29,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (DATE((to_timestamp(h.ts / 1000) - INTERVAL '6 hours')
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -87,7 +87,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('day', to_timestamp(h.ts / 1000 - 21600)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -177,7 +177,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     date_trunc('hour', to_timestamp(h.ts / 1000)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'),
-                    'YYYY-MM-DDTHH24:MI:SS'
+                    'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -238,7 +238,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('month', to_timestamp(h.ts / 1000 - 21600)
                     AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                    + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
+                    + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
@@ -290,7 +290,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                 to_char(
                     (date_trunc('year', to_timestamp(h.ts / 1000 - 21600)
                         AT TIME ZONE 'Asia/Ho_Chi_Minh'))
-                        + INTERVAL '6 hours', 'YYYY-MM-DDTHH24:MI:SS'
+                        + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
                 SUM(h.e_consumption) / 1000 AS total_consumption
