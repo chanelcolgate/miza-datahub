@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_get_daily_consumption_by_device(
-    electricity_consumption_query, debug=False
+    electricity_consumption_query, debug=True
 ):
 
     result = electricity_consumption_query.get_daily_consumption_by_device(
