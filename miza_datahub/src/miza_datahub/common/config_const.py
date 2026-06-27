@@ -1,3 +1,5 @@
+from datetime import timezone, timedelta
+
 EXCEL = "Excel"
 DATA_PATH = "data_path"
 
@@ -17,5 +19,7 @@ POSTGRES_PORT = "port"
 POSTGRES_DB = "db"
 POSTGRES_USERNAME = "username"
 POSTGRES_PASSWORD = "password"
+
+VN_TZ = timezone(timedelta(hours=7))
 
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"

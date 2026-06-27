@@ -11,6 +11,15 @@ from miza_datahub.influxdb.queries.oee.miza_realtime_query import (
 from miza_datahub.influxdb.queries.oee.paper_daily_oee_query import (
     PaperDailyOEEQuery,
 )
+from miza_datahub.influxdb.queries.pulp.pulp_realtime_query import (
+    PulpRealtimeQuery,
+)
+from miza_datahub.influxdb.queries.air.air_realtime_query import (
+    AirRealtimeQuery,
+)
+from miza_datahub.influxdb.queries.water.water_realtime_query import (
+    WaterRealtimeQuery,
+)
 from miza_datahub.postgres.queries.electricity_consumption_query import (
     ElectricityConsumptionQuery,
 )
@@ -56,6 +65,21 @@ def miza_realtime_query(influx):
 @pytest.fixture(scope="session")
 def paper_daily_oee_query(influx):
     return PaperDailyOEEQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def pulp_realtime_query(influx):
+    return PulpRealtimeQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def air_realtime_query(influx):
+    return AirRealtimeQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def water_realtime_query(influx):
+    return WaterRealtimeQuery(influx)
 
 
 @pytest.fixture(scope="session")
