@@ -41,3 +41,11 @@ def test_get_all_values_trend(paper_daily_oee_query, debug=False):
             logger.info(f"Result = {result}")
 
     assert result is not None
+
+
+# def test_delete_all_values_error(paper_daily_oee_query, debug=True):
+#     result = paper_daily_oee_query.delete_all_values_error()
+#     if debug:
+#         logger.info(f"Result = {result}")
+#
+#     assert result is not None

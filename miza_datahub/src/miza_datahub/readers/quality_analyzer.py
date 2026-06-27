@@ -105,7 +105,7 @@ class QualityAnalyzer(BaseReader):
                 df_quality["production_day"].max() + pd.Timedelta(days=1)
             ).strftime("%Y-%m-%dT00:00:00Z"),
         )
-        df_final = OEEService.calculate_pq(actual, plan, df_quality)
+        df_final = OEEService.calculate_pq(actual, plan, df_quality, mode="Q")
         paper_oee.write_pq(df_final)
         return True
 

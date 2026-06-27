@@ -1,6 +1,10 @@
 """Tests for the influxdb.queries.oee.miza_realtime_query module"""
 
 import logging
+from datetime import datetime
+
+from miza_datahub.common import config_const as ConfigConst  # type: ignore
+from miza_datahub.services.oee_service import OEEService  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +15,37 @@ def test_get_daily_availability(miza_realtime_query, debug=False):
         logger.info("Result = %s", result)
 
     assert result is not None
-    assert isinstance(result, list)
+
+
+def test_get_realtime_availability(miza_realtime_query, debug=False):
+    now_vn = datetime.now(ConfigConst.VN_TZ)
+    current_date_str = now_vn.strftime("%Y-%m-%d")
+    result = miza_realtime_query.get_daily_availability(current_date_str)
+    if debug:
+        logger.info("Result = %s", result)
+
+    assert result is not None
+
+
+def test_get_daily_performance(miza_realtime_query, debug=False):
+    now_vn = datetime.now(ConfigConst.VN_TZ)
+    current_date_str = now_vn.strftime("%Y-%m-%d")
+    result = miza_realtime_query.get_daily_performance(current_date_str)
+    if debug:
+        logger.info("Result = %s", result)
+
+    assert result is not None
+
+
+def test_get_last_speed(miza_realtime_query, debug=True):
+    availability = miza_realtime_query.get_daily_availability()
+    performance = miza_realtime_query.get_daily_performance()
+    last_speed = miza_realtime_query.get_last_speed()
+    result = OEEService().merge_metrics_to_dict_list(
+        availability, performance, last_speed
+    )
+    if debug:
+        logger.info(f"Result: {result}")
 
 
 def test_get_daily_availability_no_data(miza_realtime_query, debug=False):

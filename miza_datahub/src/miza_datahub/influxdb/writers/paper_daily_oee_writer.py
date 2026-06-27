@@ -1,5 +1,6 @@
 import pandas as pd
 
+from miza_datahub.services.time_utils import TimeUtils
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
@@ -21,7 +22,8 @@ class PaperDailyOEEWriter(InfluxRepository):
         }
 
         for _, row in df.iterrows():
-            timestamp = int(row["production_day"].timestamp())
+            ts = row["production_day"]
+            timestamp = TimeUtils.to_vn_timestamp(ts)
 
             tags = [
                 f"factory={PaperDailyOEEWriter.escape_string('MIZA Nghi Sơn')}",
@@ -56,7 +58,8 @@ class PaperDailyOEEWriter(InfluxRepository):
         }
 
         for _, row in df.iterrows():
-            timestamp = int(row["production_day"].timestamp())
+            ts = row["production_day"]
+            timestamp = TimeUtils.to_vn_timestamp(ts)
 
             tags = [
                 f"factory={PaperDailyOEEWriter.escape_string('MIZA Nghi Sơn')}",

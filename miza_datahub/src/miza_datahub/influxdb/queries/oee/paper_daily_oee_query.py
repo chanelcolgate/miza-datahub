@@ -99,3 +99,25 @@ class PaperDailyOEEQuery(InfluxRepository):
         result = self.query(query)
 
         return result["results"][0].get("series", [{}])[0].get("values", [])
+
+    def delete_all_values_error(self):
+        results = self.query("""
+            SELECT * FROM "paper_daily_oee"
+            WHERE
+                time >= 1780854202295ms
+                AND time <= 1782389990487ms
+        """)
+
+        series = results["results"][0].get("series", [])
+        ts = []
+
+        for point in series[0]["values"]:
+            timestamp = point[0]
+
+            if timestamp.endswith("T00:00:00Z"):
+                self.query(f"""
+                    DELETE FROM "paper_daily_oee"
+                    WHERE
+                    time = '{timestamp}'
+                """)
+        return ts
