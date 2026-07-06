@@ -32,7 +32,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                         + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
-                SUM(h.e_consumption) / 1000 AS total_consumption
+                SUM(h.e_consumption) AS total_consumption
             FROM hourly_electricity_consumption h
             JOIN device d ON h.entity_id = d.id
             WHERE
@@ -90,7 +90,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                         + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
-                SUM(h.e_consumption) / 1000 AS total_consumption
+                SUM(h.e_consumption) AS total_consumption
             FROM hourly_electricity_consumption h
             JOIN device d ON h.entity_id = d.id
             WHERE
@@ -180,7 +180,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                     'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
-                SUM(h.e_consumption) / 1000 AS total_consumption
+                SUM(h.e_consumption) AS total_consumption
             FROM hourly_electricity_consumption h
             JOIN device d ON h.entity_id = d.id
             WHERE
@@ -241,7 +241,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                     + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
-                SUM(h.e_consumption) / 1000 AS total_consumption
+                SUM(h.e_consumption) AS total_consumption
             FROM hourly_electricity_consumption h
             JOIN device d ON h.entity_id = d.id
             WHERE
@@ -293,7 +293,7 @@ class ElectricityConsumptionQuery(PostgresRepository):
                         + INTERVAL '6 hours', 'YYYY-MM-DD HH24:MI:SS'
                 ) AS production_day,
                 d.name AS device_name,
-                SUM(h.e_consumption) / 1000 AS total_consumption
+                SUM(h.e_consumption) AS total_consumption
             FROM hourly_electricity_consumption h
             JOIN device d ON h.entity_id = d.id
             WHERE

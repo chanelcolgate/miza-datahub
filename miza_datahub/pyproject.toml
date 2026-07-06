@@ -7,7 +7,7 @@ line-length = 80
 target-version = ['py311']
 
 [[tool.mypy.overrides]]
-module = ["pandas.*", "numpy.*", "requests"]
+module = ["pandas.*", "numpy.*", "requests", "openpyxl"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

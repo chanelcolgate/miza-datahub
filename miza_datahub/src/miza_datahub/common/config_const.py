@@ -20,6 +20,13 @@ POSTGRES_DB = "db"
 POSTGRES_USERNAME = "username"
 POSTGRES_PASSWORD = "password"
 
+TIMESCALEDB = "TimescaleDB"
+TIMESCALEDB_HOST = "host"
+TIMESCALEDB_PORT = "port"
+TIMESCALEDB_DB = "db"
+TIMESCALEDB_USERNAME = "username"
+TIMESCALEDB_PASSWORD = "password"
+
 VN_TZ = timezone(timedelta(hours=7))
 
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"

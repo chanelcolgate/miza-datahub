@@ -5,6 +5,7 @@ import requests
 from miza_datahub.common.config_util import ConfigUtil
 from miza_datahub.common import config_const as ConfigConst
 from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
+from miza_datahub.postgres.postgres_repository import PostgresRepository
 
 
 class BaseReader(ABC):
@@ -54,6 +55,33 @@ class BaseReader(ABC):
             default_val="miza_new",
         )
         self.influx = InfluxRestClient(influx_host, influx_port, influx_db)
+
+        # TimescaleDB
+        self.timescaledb_host = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_HOST,
+            default_val="192.168.10.2",
+        )
+        self.timescaledb_port = config_util.get_int(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_PORT,
+            default_val=5432,
+        )
+        self.timescaledb_db = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_DB,
+            default_val="monitoring",
+        )
+        self.timescaledb_usr = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_USERNAME,
+            default_val="odoo",
+        )
+        self.timescaledb_pass = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_PASSWORD,
+            default_val="odoo",
+        )
 
     @abstractmethod
     def load(self):

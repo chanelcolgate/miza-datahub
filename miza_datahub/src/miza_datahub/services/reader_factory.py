@@ -7,6 +7,7 @@ from miza_datahub.readers.oee_analyzer import OEEAnalyzer
 from miza_datahub.readers.quality_analyzer import (
     QualityAnalyzer,
 )
+from miza_datahub.readers.plan_production_analyzer import PlanProductionAnalyzer
 
 
 def detect_file_types(file_bytes):
@@ -18,6 +19,9 @@ def detect_file_types(file_bytes):
 
     if "Chi_Tiet_Chat_Luong" in sheets:
         return "quality"
+
+    if "3_ĐKSX_OK" in sheets:
+        return "plan"
 
     return ValueError(f"Don't read file. Sheets={sheets}")
 
@@ -34,3 +38,6 @@ class ReaderFactory:
 
         if file_type == "quality":
             return QualityAnalyzer(file_id=file_id, file_path=file_path)
+
+        if file_type == "plan":
+            return PlanProductionAnalyzer(file_id=file_id, file_path=file_path)

@@ -24,6 +24,7 @@ class PaperDailyOEEQuery(InfluxRepository):
             time >= '{date}T06:00:00+07:00'
             AND time <= '{date}T06:00:00+07:00' + 1d
         GROUP BY time(1m) fill(none)
+        TZ('Asia/Ho_Chi_Minh')
         """
         result = self.query(query)
         return result["results"][0].get("series", [{}])[0].get("values", [])
