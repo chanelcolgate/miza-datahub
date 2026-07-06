@@ -5,7 +5,6 @@ import requests
 from miza_datahub.common.config_util import ConfigUtil
 from miza_datahub.common import config_const as ConfigConst
 from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
-from miza_datahub.postgres.postgres_repository import PostgresRepository
 
 
 class BaseReader(ABC):
