@@ -20,3 +20,10 @@ def test_excel_2(debug=False):
 
     production = ReaderFactory.create(file_path=file_path)
     assert production.write()
+
+
+def test_excel_3(debug=False):
+    file_path = UPLOAD_DIR / "Air.xlsx"
+
+    production = ReaderFactory.create(file_path=file_path)
+    assert production.write()

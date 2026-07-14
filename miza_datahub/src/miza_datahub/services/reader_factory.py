@@ -8,6 +8,7 @@ from miza_datahub.readers.quality_analyzer import (
     QualityAnalyzer,
 )
 from miza_datahub.readers.plan_production_analyzer import PlanProductionAnalyzer
+from miza_datahub.readers.air_analyzer import AirAnalyzer
 
 
 def detect_file_types(file_bytes):
@@ -22,6 +23,9 @@ def detect_file_types(file_bytes):
 
     if "3_ĐKSX_OK" in sheets:
         return "plan"
+
+    if "Báo cáo hơi" in sheets:
+        return "air"
 
     return ValueError(f"Don't read file. Sheets={sheets}")
 
@@ -41,3 +45,6 @@ class ReaderFactory:
 
         if file_type == "plan":
             return PlanProductionAnalyzer(file_id=file_id, file_path=file_path)
+
+        if file_type == "air":
+            return AirAnalyzer(file_id=file_id, file_path=file_path)
