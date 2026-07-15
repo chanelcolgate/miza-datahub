@@ -144,7 +144,7 @@ class AirAnalyzer(BaseReader):
         df_final["Chênh lệch tốc độ"] = (
             df_final["Chênh lệch tốc độ"].fillna(0).astype(np.int16)
         )
-        df_final["ĐL giấy"] = df_final["ĐL giấy"].fillna(0).astype(np.uint16)
+        df_final["ĐL giấy"] = df_final["ĐL giấy"].fillna(0).astype(np.int16)
         df_final["Tổng hơi (Tấn)"] = (
             df_final["Tổng hơi (Tấn)"].fillna(0).astype(np.uint8)
         )
@@ -194,7 +194,7 @@ class AirAnalyzer(BaseReader):
             df_final["Chênh áp lô sấy 36-42"].fillna(0).astype(np.uint8)
         )
         df_final["Đứt giấy-dừng (phút)"] = (
-            df_final["Đứt giấy-dừng (phút)"].fillna(0).astype(np.uint16)
+            df_final["Đứt giấy-dừng (phút)"].fillna(0).astype(np.int16)
         )
         self.df = (
             df_final[
