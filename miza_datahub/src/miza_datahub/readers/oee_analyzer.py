@@ -31,8 +31,14 @@ class OEEAnalyzer(BaseReader):
 
             if not 1 <= current_day <= max_day:
                 continue
-            full_timestamp = pd.to_datetime(
-                f"{current_day}/{month}/{year} 00:00", dayfirst=True
+
+            time_str = "06:00:00"
+
+            current_date = pd.to_datetime(
+                f"{current_day}/{month}/{year}", format="%d/%m/%Y"
+            )
+            full_timestamp = current_date.normalize() + pd.to_timedelta(
+                time_str
             )
             timeline.append(full_timestamp)
 
