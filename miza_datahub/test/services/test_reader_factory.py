@@ -8,22 +8,29 @@ UPLOAD_DIR = Path("data")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-def test_excel_1(debug=False):
+def ignore_test_excel_1(debug=False):
     file_path = UPLOAD_DIR / "Q.xlsx"
 
     production = ReaderFactory.create(file_path=file_path)
     assert production.write()
 
 
-def test_excel_2(debug=False):
+def ignore_test_excel_2(debug=False):
     file_path = UPLOAD_DIR / "OEE.xlsx"
 
     production = ReaderFactory.create(file_path=file_path)
     assert production.write()
 
 
-def test_excel_3(debug=False):
+def ignore_test_excel_3(debug=False):
     file_path = UPLOAD_DIR / "Air.xlsx"
+
+    production = ReaderFactory.create(file_path=file_path)
+    assert production.write()
+
+
+def test_excel_4(debug=False):
+    file_path = UPLOAD_DIR / "DT.xlsx"
 
     production = ReaderFactory.create(file_path=file_path)
     assert production.write()

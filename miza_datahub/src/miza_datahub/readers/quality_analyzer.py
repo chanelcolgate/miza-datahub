@@ -1,6 +1,7 @@
+import logging
 from io import BytesIO
 
-# import numpy as np
+import numpy as np
 import pandas as pd
 
 from miza_datahub.readers.base_reader import BaseReader
@@ -10,7 +11,13 @@ from miza_datahub.influxdb.queries.paper_machine_query import (
 from miza_datahub.influxdb.writers.paper_daily_oee_writer import (
     PaperDailyOEEWriter,
 )
+from miza_datahub.influxdb.writers.quality_analyzer import (
+    JumboRollWriter,
+    CutRollWriter,
+)
 from miza_datahub.services.oee_service import OEEService
+
+logger = logging.getLogger(__name__)
 
 
 class QualityAnalyzer(BaseReader):
@@ -138,3 +145,150 @@ class QualityAnalyzer(BaseReader):
                 f"{self.df[c].memory_usage(deep=True)/1024**2:>12.2f}"
             )
         self.df.info(memory_usage="deep")
+
+
+class JumboRollAnalyzer(BaseReader):
+    def load(self):
+        try:
+            df = pd.read_excel(
+                BytesIO(self.file_bytes),
+                sheet_name="TH",
+                skiprows=3,
+                usecols="B:I,P,W,AE,BQ",
+                names=[
+                    "Giờ",
+                    "Loại giấy",
+                    "Định lượng chuẩn",
+                    "Ngày cắt cuộn con",
+                    "Khổ",
+                    "Khách hàng",
+                    "Mã cuộn",
+                    "Khối lượng",
+                    "Định lượng trung bình",
+                    "Bục trung bình",
+                    "Nén vòng trung bình",
+                    "Ca cắt",
+                ],
+            )
+        except Exception as e:
+            logger.error(f"Failed to load workbook from BytesIO: {e}")
+            raise
+
+        df = df.dropna(subset=["Mã cuộn"])
+
+        df["Mã cuộn"] = df["Mã cuộn"].astype(str).str.strip()
+        code_date_str = df["Mã cuộn"].str[3:9]
+
+        code_datetime = pd.to_datetime(
+            code_date_str, format="%d%m%y", errors="coerce"
+        )
+        date_str = code_datetime.dt.strftime("%Y-%m-%d")
+
+        df["Giờ"] = df["Giờ"].ffill().fillna("0h00")
+
+        time_str = (
+            df["Giờ"]
+            .astype(str)
+            .str.replace(r"[^0-9h]", "", regex=True)  # ' ~2h ' -> '2h'
+            .str.replace(r"h$", "h00", regex=True)  # '2h' -> '2h00'
+            .str.replace("h", ":", regex=False)  # '2h00' -> '2:00'
+            .str.replace(r"h^24:", "00:", regex=True)  # '24:00' -> '00:00'
+        )
+
+        df["jumbo_prod_time"] = pd.to_datetime(
+            date_str + " " + time_str, errors="coerce"
+        )
+
+        df["Ngày cắt cuộn con"] = pd.to_datetime(
+            df["Ngày cắt cuộn con"], dayfirst=True, errors="coerce"
+        ).fillna(df["jumbo_prod_time"])
+
+        df["Khối lượng"] = (
+            df["Khối lượng"]
+            .astype(str)
+            .str.replace(r"[^0-9.]", "", regex=True)
+            .replace("", np.nan)
+            .fillna(0)
+            .astype(float)
+            .astype(np.uint16)
+        )
+
+        df["Định lượng chuẩn"] = (
+            df["Định lượng chuẩn"]
+            .astype(str)
+            .str.replace(r"[^0-9.]", "", regex=True)
+            .replace("", np.nan)
+            .fillna(0)
+            .astype(float)
+            .astype(np.uint8)
+        )
+
+        kho_clean = (
+            df["Khổ"]
+            .astype(str)
+            .str.replace(r"[^0-9.]", "", regex=True)
+            .replace("", np.nan)
+            .astype(float)
+        )
+        df["Khổ"] = (np.round(kho_clean * 2) / 2).astype(np.float32)
+
+        quality_cols = [
+            "Định lượng trung bình",
+            "Bục trung bình",
+            "Nén vòng trung bình",
+        ]
+
+        for col in quality_cols:
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.replace(r"[^0-9.]", "", regex=True)
+                .replace("", np.nan)
+                .fillna(0.0)
+                .astype(np.float32)
+            )
+
+        df["Ca cắt"] = df["Ca cắt"].ffill().astype(str).str.strip()
+        df["Mã cuộn"] = df["Mã cuộn"].astype(str).str.strip()
+        df["Khách hàng"] = df["Khách hàng"].astype(str).str.strip()
+
+        df["jumbo_prod_time"] = df["jumbo_prod_time"].fillna(code_datetime)
+        df["Ngày cắt cuộn con"] = df["Ngày cắt cuộn con"].fillna(
+            df["jumbo_prod_time"]
+        )
+
+        df.drop(columns=["Giờ"], inplace=True)
+
+        df_final = df.sort_values(by="jumbo_prod_time").reset_index(drop=True)
+
+        df_final["jumbo_crew"] = df_final["Mã cuộn"].str[0]
+
+        df_final["jumbo_id"] = (
+            df_final["Mã cuộn"].str[3:9] + "_" + df_final["Mã cuộn"].str[9:11]
+        )
+
+        change_crew = (
+            df_final["jumbo_crew"] != df_final["jumbo_crew"].shift(1)
+        ).astype(int)
+        group_id_temp = change_crew.cumsum()
+
+        start_hour = (
+            df_final.groupby(group_id_temp)["jumbo_prod_time"]
+            .transform("min")
+            .dt.hour
+        )
+        df_final["jumbo_shift"] = np.where(
+            (start_hour >= 6) & (start_hour < 18), "Ca 1", "Ca 2"
+        )
+
+        self.df = df_final
+
+    def write(self):
+        self.load()
+
+        jumbo_roll_writer = JumboRollWriter(self.influx)
+        cut_roll_writer = CutRollWriter(self.influx)
+
+        jumbo_roll_writer.write(self.df)
+        cut_roll_writer.write(self.df)
+        return True

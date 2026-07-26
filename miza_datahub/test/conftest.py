@@ -31,6 +31,9 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+collect_ignore = ["path/to/test/excluded"]
+collect_ignore_glob = ["*_ignore.py"]
+
 
 @pytest.fixture(scope="session")
 def config_util():
