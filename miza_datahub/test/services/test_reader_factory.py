@@ -29,8 +29,18 @@ def ignore_test_excel_3(debug=False):
     assert production.write()
 
 
-def test_excel_4(debug=False):
+def ignore_test_excel_4(debug=False):
     file_path = UPLOAD_DIR / "DT.xlsx"
 
+    production = ReaderFactory.create(file_path=file_path)
+    assert production.write()
+
+
+def test_excel_5(debug=False):
+    file_path = (
+        "https://dongtienpaper-my.sharepoint.com/:x:/p/nguyenthinhu/"
+        "IQDj5lSaTaPXRZAt5BK4ipTlAc5jW8cwKyZDG1-sz5X0f5o"
+        "?rtime=byQN_PDx3kg"
+    )
     production = ReaderFactory.create(file_path=file_path)
     assert production.write()

@@ -31,11 +31,24 @@ class BaseReader(ABC):
                     token=token, file_path=file_path
                 )
             ).content
+        # HTTP/HTTPS
+        elif file_path and file_path.startswith(("http://", "https://")):
+            headers = {"User-Agent": "Mozilla/5.0"}
 
+            response = requests.get(
+                file_path,
+                headers=headers,
+                params={"download": 1},
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+            self.file_bytes = response.content
         # file local
         elif file_path:
             with open(file_path, "rb") as f:
                 self.file_bytes = f.read()
+        else:
+            raise ValueError("Either file_id or file_path must be provided.")
 
         # InfluxDB
         influx_host = config_util.get_property(
