@@ -2,6 +2,7 @@ from datetime import timezone, timedelta
 
 EXCEL = "Excel"
 DATA_PATH = "data_path"
+DATA_QUALITY_PATH = "data_quality_path"
 
 TELEGRAM = "Telegram"
 TOKEN = "token"
