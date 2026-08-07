@@ -35,7 +35,10 @@ class JumboRollWriter(InfluxRepository):
             lines.append(line)
 
         if lines:
-            self.client.write("\n".join(lines))
+            try:
+                self.client.write("\n".join(lines))
+            except Exception as e:
+                print(e)
 
 
 class CutRollWriter(InfluxRepository):
@@ -71,4 +74,7 @@ class CutRollWriter(InfluxRepository):
             lines.append(line)
 
         if lines:
-            self.client.write("\n".join(lines))
+            try:
+                self.client.write("\n".join(lines))
+            except Exception as e:
+                print(e)
