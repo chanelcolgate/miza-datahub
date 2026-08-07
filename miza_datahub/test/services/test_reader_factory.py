@@ -39,7 +39,13 @@ def ignore_test_excel_4(debug=False):
 
 def test_excel_5(config_util, debug=False):
     file_path = config_util.get_property(
-        section=ConfigConst.EXCEL, key=ConfigConst.DATA_QUALITY_PATH
+        section=ConfigConst.EXCEL,
+        key=ConfigConst.DATA_QUALITY_PATH,
+        default_val=(
+            "https://dongtienpaper-my.sharepoint.com/:x:/p/nguyenthinhu/"
+            "IQDj5lSaTaPXRZAt5BK4ipTlAc5jW8cwKyZDG1-sz5X0f5o"
+            "?rtime=byQN_PDx3kg"
+        ),
     )
     # file_path = (
     #     "https://dongtienpaper-my.sharepoint.com/:x:/p/nguyenthinhu/"
