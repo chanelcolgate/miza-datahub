@@ -4,6 +4,12 @@ EXCEL = "Excel"
 DATA_PATH = "data_path"
 DATA_QUALITY_PATH = "data_quality_path"
 
+SELENIUM = "Selenium"
+URL = "url"
+USERNAME = "username"
+PASSWORD = "password"
+CAPTCHA_DIR = "captcha_dir"
+
 TELEGRAM = "Telegram"
 TOKEN = "token"
 URL_GET_FILE_PATH = "https://api.telegram.org/bot{token}/getFile"

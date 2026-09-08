@@ -23,6 +23,7 @@ from miza_datahub.influxdb.queries.water.water_realtime_query import (
 from miza_datahub.postgres.queries.electricity_consumption_query import (
     ElectricityConsumptionQuery,
 )
+from miza_datahub.webscraping.evnspc_scraper import EVNSPCScraper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,3 +120,10 @@ def electricity_consumption_query(config_util):
         username=username,
         password=password,
     )
+
+
+@pytest.fixture(scope="session")
+def scraper():
+    scraper_instance = EVNSPCScraper(headless=True)
+    yield scraper_instance
+    scraper_instance.close()

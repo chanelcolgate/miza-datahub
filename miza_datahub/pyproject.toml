@@ -7,9 +7,16 @@ line-length = 80
 target-version = ['py311']
 
 [[tool.mypy.overrides]]
-module = ["pandas.*", "numpy.*", "requests", "openpyxl"]
+module = ["pandas.*", "numpy.*", "requests", "openpyxl", "ddddocr.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "INFO"
+
+[dependency-groups]
+dev = [
+    "ddddocr>=1.6.1",
+    "types-selenium>=3.141.9",
+    "webdriver-manager>=4.1.2",
+]
