@@ -12,14 +12,15 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from miza_datahub.common.config_util import ConfigUtil
 from miza_datahub.common import config_const as ConfigConst
-
-# from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
+from miza_datahub.influxdb.influx_rest_client import InfluxRestClient
+from miza_datahub.influxdb.writers.electricity_writer import ElectricityWriter
 
 
 class EVNSPCScraper:
     def __init__(self, headless=True):
         config_util = ConfigUtil()
 
+        # Selenium
         self.url = config_util.get_property(
             section=ConfigConst.SELENIUM, key=ConfigConst.URL
         )
@@ -33,11 +34,37 @@ class EVNSPCScraper:
             section=ConfigConst.SELENIUM, key=ConfigConst.CAPTCHA_DIR
         )
 
+        # InfluxDB
+        influx_host = config_util.get_property(
+            section=ConfigConst.INFLUX,
+            key=ConfigConst.INFLUX_HOST,
+            default_val="localhost",
+        )
+        influx_port = config_util.get_int(
+            section=ConfigConst.INFLUX,
+            key=ConfigConst.INFLUX_PORT,
+            default_val=8090,
+        )
+        influx_db = config_util.get_property(
+            section=ConfigConst.INFLUX,
+            key=ConfigConst.INFLUX_DB,
+            default_val="dongtien",
+        )
+
+        self.influx = InfluxRestClient(influx_host, influx_port, influx_db)
+
         edge_options = Options()
         # edge_options.add_argument("--kiosk")
+        edge_options = Options()
         edge_options.add_argument("--disable-gpu")
+        edge_options.add_argument("--no-sandbox")
+        edge_options.add_argument("--disable-dev-shm-usage")
+
+        # Bắt buộc đặt độ phân giải lớn để layout không bị vỡ/chồng đè
+        edge_options.add_argument("--window-size=1920,1080")
+
         if headless:
-            edge_options.add_argument("--headless")
+            edge_options.add_argument("--headless=new")
 
         service = Service(EdgeChromiumDriverManager().install())
         self.driver = webdriver.Edge(service=service, options=edge_options)
@@ -94,7 +121,7 @@ class EVNSPCScraper:
                 pass_input.send_keys(self.password)
 
                 captcha_code = self._solve_captcha()
-                print(captcha_code, self.username, self.password)
+                # print(captcha_code, self.username, self.password)
                 captcha_input = self.wait.until(
                     EC.presence_of_element_located(
                         (By.XPATH, '//input[@name="clientCaptcha"]')
@@ -147,13 +174,15 @@ class EVNSPCScraper:
         search_button = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, '//input[@id="idTraCuu"]'))
         )
-        search_button.click()
+        # search_button.click()
+        self.driver.execute_script("arguments[0].click();", search_button)
 
         self.wait.until(
             EC.presence_of_element_located(
-                (By.XPATH, '//div[@class="quantity-tbl"]')
+                (By.XPATH, '//div[@class="quantity-tbl"]/table/tbody/tr[1]')
             )
         )
+        time.sleep(1)
 
         TIER_MAP = {
             "Bình thường": "normal_tier",
@@ -205,3 +234,8 @@ class EVNSPCScraper:
     def close(self):
         if hasattr(self, "driver") and self.driver:
             self.driver.quit()
+
+    def write(self, raw_data):
+        writer = ElectricityWriter(self.influx)
+        writer.write(raw_data)
+        return True
