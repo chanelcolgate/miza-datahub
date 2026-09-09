@@ -6,6 +6,8 @@ from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 class ElectricityWriter(InfluxRepository):
     MEASUREMENT = "electricity_measurement"
+    FACTORY_NAME = "Dong Tien Paper Long An"
+    MACHINE_NAME = "EVNMeter"
 
     def write(self, data: list[dict] | pd.DataFrame):
         if isinstance(data, list):
@@ -16,63 +18,56 @@ class ElectricityWriter(InfluxRepository):
         if df.empty:
             return
 
+        df["dt"] = pd.to_datetime(df["timestamp"], format="%d/%m/%Y")
+        df = df.sort_values("dt").reset_index(drop=True)
+
+        tier_cols = ["normal_tier", "peak_tier", "off_peak_tier", "total"]
+        for col in tier_cols:
+            df[col] = df[col].astype("float")
+
+        df["next_off_peak"] = df["off_peak_tier"].shift(-1)
+        df["total_shift"] = (
+            df["total"] - df["off_peak_tier"] + df["next_off_peak"]
+        )
+
+        factory_esc = self.escape_string(self.FACTORY_NAME)
+
         lines = []
         for _, row in df.iterrows():
-            ts_str = row["timestamp"]
+            ts_00 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) * 10**9
 
-            # Timestamp
-            timestamp = TimeUtils.date_str_to_vn_timestamp(ts_str)
+            ts_06 = (
+                TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) + 21600
+            ) * 10**9
 
-            factory_esc = ElectricityWriter.escape_string(
-                "Dong Tien Paper Long An"
-            )
-
-            # Tags
-            normal_tags = [
-                f"factory={factory_esc}",
-                "machine=EVNMeter",
-                f"name={ElectricityWriter.escape_string('Bình Thường')}",
+            metrics_00 = [
+                ("Bình Thường", row["normal_tier"]),
+                ("Cao Điểm", row["peak_tier"]),
+                ("Thấp Điểm", row["off_peak_tier"]),
+                ("Tổng Ngày", row["total"]),
             ]
 
-            peak_tags = [
-                f"factory={factory_esc}",
-                "machine=EVNMeter",
-                f"name={ElectricityWriter.escape_string('Cao Điểm')}",
-            ]
+            for name, val in metrics_00:
+                name_esc = self.escape_string(name)
+                line = (
+                    f"{self.MEASUREMENT},"
+                    f"factory={factory_esc},"
+                    f"machine={self.MACHINE_NAME},"
+                    f"name={name_esc} "
+                    f"value={val} {ts_00}"
+                )
+                lines.append(line)
 
-            off_peak_tags = [
-                f"factory={factory_esc}",
-                "machine=EVNMeter",
-                f"name={ElectricityWriter.escape_string('Thấp Điểm')}",
-            ]
+            if pd.notna(row["total_shift"]):
+                name_esc = self.escape_string("Tổng Ca 6h")
+                line_shift = (
+                    f"{self.MEASUREMENT},"
+                    f"factory={factory_esc},"
+                    f"machine={self.MACHINE_NAME},"
+                    f"name={name_esc} "
+                    f"value={row['total_shift']} {ts_06}"
+                )
+                lines.append(line_shift)
 
-            # Values
-            normal_values = f"value={float(row['normal_tier'])}"
-            peak_values = f"value={float(row['peak_tier'])}"
-            off_peak_values = f"value={float(row['off_peak_tier'])}"
-
-            # Line
-            normal_line = (
-                f"{self.MEASUREMENT},{','.join(normal_tags)} "
-                f"{normal_values }"
-                f"{timestamp}"
-            )
-
-            peak_line = (
-                f"{self.MEASUREMENT},{','.join(peak_tags)} "
-                f"{peak_values }"
-                f"{timestamp}"
-            )
-
-            off_peak_line = (
-                f"{self.MEASUREMENT},{','.join(off_peak_tags)} "
-                f"{off_peak_values }"
-                f"{timestamp}"
-            )
-
-            lines.append(normal_line)
-            lines.append(peak_line)
-            lines.append(off_peak_line)
-
-        print(lines)
-        self.client.write("\n".join(lines))
+        if lines:
+            self.client.write("\n".join(lines))
