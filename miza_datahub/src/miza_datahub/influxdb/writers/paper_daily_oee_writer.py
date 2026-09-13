@@ -5,9 +5,36 @@ from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
 class PaperDailyOEEWriter(InfluxRepository):
-    MEASUREMENT = "paper_daily_oee"
+    MEASUREMENT_OEE = "paper_daily_oee"
+    MEASUREMENT_PRODUCTION = "paper_daily_production"
 
-    def write_apq(self, df):
+    def _build_line_protocol(
+        self,
+        measurement: str,
+        tags: list[str],
+        fields_dict: dict,
+        timestamp: int,
+    ) -> str | None:
+        """Helper dựng Influx Line Protocol string từ tags và dict fields."""
+        valid_fields = [
+            f"{k}={v}"
+            for k, v in fields_dict.items()
+            if pd.notna(v) and v is not None
+        ]
+        if not valid_fields:
+            return None
+
+        tag_str = ",".join(tags)
+        field_str = ",".join(valid_fields)
+        return f"{measurement},{tag_str} {field_str} {timestamp}"
+
+    def write_apq(
+        self,
+        df: pd.DataFrame,
+        factory: str = "MIZA Nghi Sơn",
+        line: str = "PM3",
+        machine: str = "Scanner",
+    ):
         lines = []
         mapping = {
             "Sản lượng": "actual",
@@ -26,9 +53,9 @@ class PaperDailyOEEWriter(InfluxRepository):
             timestamp = TimeUtils.to_vn_timestamp(ts)
 
             tags = [
-                f"factory={PaperDailyOEEWriter.escape_string('MIZA Nghi Sơn')}",
-                "line=PM3",
-                "machine=Scanner",
+                f"factory={self.escape_string(factory)}",
+                f"line={self.escape_string(line)}",
+                f"machine={self.escape_string(machine)}",
             ]
 
             values = [
@@ -37,15 +64,15 @@ class PaperDailyOEEWriter(InfluxRepository):
                 if pd.notna(row[df_field])
             ]
 
-            line = (
-                f'{self.MEASUREMENT},{",".join(tags)} '
-                f'{",".join(values)} '
-                f"{timestamp}"
+            line = self._build_line_protocol(
+                self.MEASUREMENT_OEE, tags, fields, timestamp
             )
 
-            lines.append(line)
+            if line:
+                lines.append(line)
 
-        self.client.write("\n".join(lines))
+        if lines:
+            self.client.write("\n".join(lines))
 
     def write_pq(self, df):
         lines = []
@@ -81,3 +108,13 @@ class PaperDailyOEEWriter(InfluxRepository):
             lines.append(line)
 
         self.client.write("\n".join(lines))
+
+    def write_apq_v2(
+        self,
+        df: pd.DataFrame,
+        factory: str = "Giấy Đồng Tiến Long An",
+        system: str = "OEE",
+        machine: str = "PM6",
+        paper_type: str = "M6S",
+    ):
+        pass

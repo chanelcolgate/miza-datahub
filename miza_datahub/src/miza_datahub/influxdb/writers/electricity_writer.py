@@ -13,7 +13,7 @@ class ElectricityWriter(InfluxRepository):
         if isinstance(data, list):
             df = pd.DataFrame(data)
         else:
-            df = data
+            df = data.copy()
 
         if df.empty:
             return
@@ -34,11 +34,9 @@ class ElectricityWriter(InfluxRepository):
 
         lines = []
         for _, row in df.iterrows():
-            ts_00 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) * 10**9
+            ts_00 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"])
 
-            ts_06 = (
-                TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) + 21600
-            ) * 10**9
+            ts_06 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) + 21600
 
             metrics_00 = [
                 ("Bình Thường", row["normal_tier"]),
