@@ -9,7 +9,7 @@ UPLOAD_DIR = Path("data")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-def ignore_test_excel_1(debug=False):
+def test_excel_1(debug=False):
     file_path = UPLOAD_DIR / "Q.xlsx"
 
     production = ReaderFactory.create(file_path=file_path)

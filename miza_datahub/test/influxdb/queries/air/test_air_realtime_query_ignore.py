@@ -61,3 +61,9 @@ def test_get_yearly_air(air_realtime_query, debug=False):
     result = air_realtime_query.get_monthly_air(year=2026, interval="y")
     if debug:
         logger.info(f"Result: {result}")
+
+
+def test_get_daily_air_v2(air_realtime_query, debug=True):
+    result = air_realtime_query.get_daily_air_v2("2026-09-01")
+    if debug:
+        logger.info(f"Result: {result}")

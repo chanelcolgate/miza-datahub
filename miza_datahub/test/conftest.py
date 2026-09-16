@@ -11,6 +11,9 @@ from miza_datahub.influxdb.queries.oee.miza_realtime_query import (
 from miza_datahub.influxdb.queries.oee.paper_daily_oee_query import (
     PaperDailyOEEQuery,
 )
+from miza_datahub.influxdb.writers.paper_daily_oee_writer import (
+    PaperDailyOEEWriter,
+)
 from miza_datahub.influxdb.queries.pulp.pulp_realtime_query import (
     PulpRealtimeQuery,
 )
@@ -20,9 +23,14 @@ from miza_datahub.influxdb.queries.air.air_realtime_query import (
 from miza_datahub.influxdb.queries.water.water_realtime_query import (
     WaterRealtimeQuery,
 )
+from miza_datahub.influxdb.queries.electric.electric_realtime_query import (
+    ElectricRealtimeQuery,
+)
 from miza_datahub.postgres.queries.electricity_consumption_query import (
     ElectricityConsumptionQuery,
 )
+from miza_datahub.webscraping.evnspc_scraper import EVNSPCScraper
+from miza_datahub.influxdb.writers.consumption_writer import ConsumptionWriter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +79,11 @@ def paper_daily_oee_query(influx):
 
 
 @pytest.fixture(scope="session")
+def paper_daily_oee_writer(influx):
+    return PaperDailyOEEWriter(influx)
+
+
+@pytest.fixture(scope="session")
 def pulp_realtime_query(influx):
     return PulpRealtimeQuery(influx)
 
@@ -83,6 +96,16 @@ def air_realtime_query(influx):
 @pytest.fixture(scope="session")
 def water_realtime_query(influx):
     return WaterRealtimeQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def electric_realtime_query(influx):
+    return ElectricRealtimeQuery(influx)
+
+
+@pytest.fixture(scope="session")
+def consumption_writer(influx):
+    return ConsumptionWriter(influx)
 
 
 @pytest.fixture(scope="session")
@@ -119,3 +142,10 @@ def electricity_consumption_query(config_util):
         username=username,
         password=password,
     )
+
+
+@pytest.fixture(scope="session")
+def scraper():
+    scraper_instance = EVNSPCScraper(headless=True)
+    yield scraper_instance
+    scraper_instance.close()

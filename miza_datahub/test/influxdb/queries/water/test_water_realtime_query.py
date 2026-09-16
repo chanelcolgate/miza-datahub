@@ -62,3 +62,19 @@ def test_get_yearly_water(water_realtime_query, debug=False):
         logger.info(f"Result: {result}")
 
     assert result is not None
+
+
+def test_get_daily_water_v2(water_realtime_query, debug=True):
+    result = water_realtime_query.get_daily_water_v2("2026-09-01")
+    if debug:
+        logger.info(f"Result: {result}")
+
+    assert result is not None
+
+
+def test_get_daily_waste_water(water_realtime_query, debug=True):
+    result = water_realtime_query.get_daily_waste_water("2026-09-01")
+    if debug:
+        logger.info(f"Result: {result}")
+
+    assert result is not None

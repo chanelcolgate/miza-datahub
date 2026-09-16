@@ -6,6 +6,27 @@ from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
 class AirRealtimeQuery(InfluxRepository):
+    def get_daily_air_v2(self, date: str):
+        query = f"""
+        SELECT
+            SUM("steam_used") as "air_used"
+        FROM
+        (
+            SELECT
+                integral("flow_actual",1h) AS "steam_used"
+            FROM "dongtien_realtime"
+            WHERE
+                "machine" = 'Lưu lượng hơi tổng'
+                AND time >= '{date}T07:00:00+07:00'
+                AND time <= '{date}T07:00:00+07:00' + 1d
+            GROUP BY time(1d) fill(none)
+        )
+        """
+        result = self.query(query)
+        return (
+            result["results"][0].get("series", [{}])[0].get("values", [])[0][1]
+        )
+
     def get_daily_air(self, date: Optional[str] = None, interval: str = "1d"):
         start_time_str, end_time_str = TimeUtils().get_production_time_range(
             date
