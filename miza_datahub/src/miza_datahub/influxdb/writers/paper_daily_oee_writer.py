@@ -1,32 +1,113 @@
+from typing import Iterable
+
 import pandas as pd
 
 from miza_datahub.services.time_utils import TimeUtils
 from miza_datahub.influxdb.influx_repository import InfluxRepository
+from miza_datahub.influxdb.queries.oee.paper_daily_oee_query import (
+    PaperDailyOEEQuery,
+)
 
 
 class PaperDailyOEEWriter(InfluxRepository):
     MEASUREMENT_OEE = "paper_daily_oee"
     MEASUREMENT_PRODUCTION = "paper_daily_production"
 
-    def _build_line_protocol(
-        self,
-        measurement: str,
-        tags: list[str],
-        fields_dict: dict,
-        timestamp: int,
-    ) -> str | None:
-        """Helper dựng Influx Line Protocol string từ tags và dict fields."""
-        valid_fields = [
-            f"{k}={v}"
-            for k, v in fields_dict.items()
-            if pd.notna(v) and v is not None
-        ]
-        if not valid_fields:
-            return None
+    # def _build_line_protocol(
+    #     self,
+    #     measurement: str,
+    #     tags: List[str],
+    #     fields_dict: dict,
+    #     timestamp: int,
+    # ) -> Optional[str]:
+    #     valid_fields = []
+    #     for k, v in fields_dict.items():
+    #         if v is None or (hasattr(pd, "isna") and pd.isna(v)):
+    #             continue
+    #         if isinstance(v, str):
+    #             safe = v.replace('"', '\\"')
+    #             valid_fields.append(f'{k}="{safe}"')
+    #         elif isinstance(v, bool):
+    #             valid_fields.append(f"{k}={str(v).lower()}")
+    #         elif isinstance(v, (int, float)) and not (
+    #             isinstance(v, float) and math.isnan(v)
+    #         ):
+    #             valid_fields.append(f"{k}={v}")
 
-        tag_str = ",".join(tags)
-        field_str = ",".join(valid_fields)
-        return f"{measurement},{tag_str} {field_str} {timestamp}"
+    #     # valid_fields = [
+    #     #     f"{k}={v}"
+    #     #     for k, v in fields_dict.items()
+    #     #     if pd.notna(v) and v is not None
+    #     # ]
+    #     if not valid_fields:
+    #         return None
+
+    #     tag_str = ",".join(tags) if tags else ""
+    #     # field_str = ",".join(valid_fields)
+    #     # return f"{measurement},{tag_str} {field_str} {timestamp}"
+    #     prefix = f"{measurement},{tag_str}" if tag_str else measurement
+    #     return f"{prefix} {','.join(valid_fields)} {timestamp}"
+
+    def compute_metrics_for_date(self, date: str) -> dict:
+        query = PaperDailyOEEQuery(self.client)
+        cut_roll_production = query.get_cut_roll_production(date) or 0.0
+        roll_production = query.get_roll_production(date) or 0.0
+        nominal_production = query.get_nominal_production(date) or 0.0
+        availability = query.get_availability(date) or 0.0
+
+        performance = (
+            (roll_production / nominal_production * 100.0)
+            if nominal_production
+            else 0.0
+        )
+        quality = (
+            (min(cut_roll_production / roll_production, 1.0) * 100.0)
+            if roll_production
+            else 0.0
+        )
+        oee = (availability * performance * quality) / 10000.0
+
+        run_time_min = 1440.0 * (availability / 100.0)
+        down_time_min = 1440.0 - run_time_min
+
+        return {
+            "actual": round(cut_roll_production, 2),
+            "plan": round(nominal_production, 2),
+            "defect": round(max(0.0, roll_production - cut_roll_production), 2),
+            "run_time": round(run_time_min, 2),
+            "down_time": round(down_time_min, 2),
+            "A": round(max(0.0, availability), 2),
+            "P": round(max(0.0, performance), 2),
+            "Q": round(max(0.0, quality), 2),
+            "OEE": round(max(0.0, oee), 2),
+        }
+
+    def write_for_dates(
+        self,
+        dates: Iterable[str],
+        factory: str = "Giấy Đồng Tiến Long An",
+        system: str = "OEE",
+        machine: str = "PM6",
+    ):
+        lines = []
+        for date in dates:
+            metrics = self.compute_metrics_for_date(date)
+            timestamp = TimeUtils.date_str_to_vn_timestamp(date, fmt="%Y-%m-%d")
+
+            tags = [
+                f"factory={self.escape_string(factory)}",
+                f"system={self.escape_string(system)}",
+                f"machine={self.escape_string(machine)}",
+                # f"paper_type={self.escape_string(paper_type)}",
+            ]
+            oee_line = self._build_line_protocol(
+                self.MEASUREMENT_OEE, tags, metrics, timestamp
+            )
+            if oee_line:
+                lines.append(oee_line)
+
+        if lines:
+            self.client.write("\n".join(lines))
 
     def write_apq(
         self,
@@ -58,18 +139,18 @@ class PaperDailyOEEWriter(InfluxRepository):
                 f"machine={self.escape_string(machine)}",
             ]
 
-            values = [
-                f"{influx_field}={row[df_field]}"
+            fields = {
+                influx_field: row[df_field]
                 for df_field, influx_field in mapping.items()
-                if pd.notna(row[df_field])
-            ]
+                if df_field in row and pd.notna(row[df_field])
+            }
 
-            line = self._build_line_protocol(
+            one_line = self._build_line_protocol(
                 self.MEASUREMENT_OEE, tags, fields, timestamp
             )
 
-            if line:
-                lines.append(line)
+            if one_line:
+                lines.append(one_line)
 
         if lines:
             self.client.write("\n".join(lines))
@@ -108,13 +189,3 @@ class PaperDailyOEEWriter(InfluxRepository):
             lines.append(line)
 
         self.client.write("\n".join(lines))
-
-    def write_apq_v2(
-        self,
-        df: pd.DataFrame,
-        factory: str = "Giấy Đồng Tiến Long An",
-        system: str = "OEE",
-        machine: str = "PM6",
-        paper_type: str = "M6S",
-    ):
-        pass
