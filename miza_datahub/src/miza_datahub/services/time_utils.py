@@ -1,5 +1,5 @@
 from typing import Union, Optional, Tuple
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import pandas as pd
 
