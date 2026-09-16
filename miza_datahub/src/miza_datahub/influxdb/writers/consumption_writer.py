@@ -13,7 +13,6 @@ from miza_datahub.influxdb.queries.water.water_realtime_query import (
 from miza_datahub.influxdb.queries.electric.electric_realtime_query import (
     ElectricRealtimeQuery,
 )
-from miza_datahub.services.time_utils import TimeUtils
 
 
 class ConsumptionWriter(InfluxRepository):
@@ -30,22 +29,14 @@ class ConsumptionWriter(InfluxRepository):
         water_used = water.get_daily_water_v2(date) or 0.0
         waste_water_used = water.get_daily_waste_water(date) or 0.0
 
-        air_consumption = (cut_roll_production / air_used) if air_used else 0.0
-
-        water_consumption = (
-            (cut_roll_production / water_used) if water_used else 0.0
-        )
-
-        waste_water_consumption = (
-            (cut_roll_production / waste_water_used)
-            if waste_water_used
-            else 0.0
-        )
-
         return {
-            "air_consumption": round(air_consumption, 2),
-            "water_consumption": round(water_consumption, 2),
-            "waste_water_consumption": round(waste_water_consumption, 2),
+            "air_consumption": self._safe_divide(air_used, cut_roll_production),
+            "water_consumption": self._safe_divide(
+                water_used, cut_roll_production
+            ),
+            "waste_water_consumption": self._safe_divide(
+                waste_water_used, cut_roll_production
+            ),
         }
 
     def compute_metrics_for_date_minus_2(self, date: str) -> dict:
@@ -55,11 +46,11 @@ class ConsumptionWriter(InfluxRepository):
         electric = ElectricRealtimeQuery(self.client)
         electric_used = electric.get_daily_electric(date) or 0.0
 
-        electric_consumption = (
-            (cut_roll_production / electric_used) if electric_used else 0.0
-        )
-
-        return {"electric_consumption": round(electric_consumption, 2)}
+        return {
+            "electric_consumption": self._safe_divide(
+                electric_used, cut_roll_production
+            )
+        }
 
     def write_for_dates_minus_1(
         self,
@@ -68,21 +59,27 @@ class ConsumptionWriter(InfluxRepository):
         system: str = "OEE",
         machine: str = "PM6",
     ):
-        lines = []
-        for date in dates:
-            metrics = self.compute_metrics_for_date_minus_1(date)
-            timestamp = TimeUtils.date_str_to_vn_timestamp(date, fmt="%Y-%m-%d")
+        self._write_metrics_for_dates(
+            dates,
+            self.compute_metrics_for_date_minus_1,
+            self.MEASUREMENT,
+            factory,
+            system,
+            machine,
+        )
 
-            tags = [
-                f"factory={self.escape_string(factory)}",
-                f"system={self.escape_string(system)}",
-                f"machine={self.escape_string(machine)}",
-            ]
-            consumption_line = self._build_line_protocol(
-                self.MEASUREMENT, tags, metrics, timestamp
-            )
-            if consumption_line:
-                lines.append(consumption_line)
-
-        if lines:
-            self.client.write("\n".join(lines))
+    def write_for_dates_minus_2(
+        self,
+        dates: Iterable[str],
+        factory: str = "Giấy Đồng Tiến Long An",
+        system: str = "OEE",
+        machine: str = "PM6",
+    ):
+        self._write_metrics_for_dates(
+            dates,
+            self.compute_metrics_for_date_minus_2,
+            self.MEASUREMENT,
+            factory,
+            system,
+            machine,
+        )

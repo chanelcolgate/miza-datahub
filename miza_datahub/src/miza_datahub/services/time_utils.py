@@ -1,5 +1,5 @@
 from typing import Union, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -65,5 +65,6 @@ class TimeUtils:
 
         # Parse string '29/08/2026' -> datetime(2026, 8, 29, 0, 0, 0)
         dt = datetime.strptime(date_str.strip(), fmt)
+        dt_7am = dt.replace(hour=7, minute=0, second=0, microsecond=0)
 
-        return cls.to_vn_timestamp(dt)
+        return cls.to_vn_timestamp(dt_7am)

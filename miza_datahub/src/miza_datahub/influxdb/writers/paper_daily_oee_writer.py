@@ -1,4 +1,5 @@
 from typing import Iterable
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -50,7 +51,11 @@ class PaperDailyOEEWriter(InfluxRepository):
 
     def compute_metrics_for_date(self, date: str) -> dict:
         query = PaperDailyOEEQuery(self.client)
-        cut_roll_production = query.get_cut_roll_production(date) or 0.0
+        old_date = (
+            datetime.strptime(date, "%Y-%m-%d") - timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        cut_roll_production = query.get_cut_roll_production(old_date) or 0.0
         roll_production = query.get_roll_production(date) or 0.0
         nominal_production = query.get_nominal_production(date) or 0.0
         availability = query.get_availability(date) or 0.0
@@ -89,25 +94,14 @@ class PaperDailyOEEWriter(InfluxRepository):
         system: str = "OEE",
         machine: str = "PM6",
     ):
-        lines = []
-        for date in dates:
-            metrics = self.compute_metrics_for_date(date)
-            timestamp = TimeUtils.date_str_to_vn_timestamp(date, fmt="%Y-%m-%d")
-
-            tags = [
-                f"factory={self.escape_string(factory)}",
-                f"system={self.escape_string(system)}",
-                f"machine={self.escape_string(machine)}",
-                # f"paper_type={self.escape_string(paper_type)}",
-            ]
-            oee_line = self._build_line_protocol(
-                self.MEASUREMENT_OEE, tags, metrics, timestamp
-            )
-            if oee_line:
-                lines.append(oee_line)
-
-        if lines:
-            self.client.write("\n".join(lines))
+        self._write_metrics_for_dates(
+            dates,
+            self.compute_metrics_for_date,
+            self.MEASUREMENT_OEE,
+            factory,
+            system,
+            machine,
+        )
 
     def write_apq(
         self,
