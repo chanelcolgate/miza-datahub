@@ -53,7 +53,7 @@ def influx(config_util):
     influx_host = config_util.get_property(
         section=ConfigConst.INFLUX,
         key=ConfigConst.INFLUX_HOST,
-        default_val="192.168.10.2",
+        default_val="localhost",
     )
     influx_port = config_util.get_int(
         section=ConfigConst.INFLUX,
@@ -63,7 +63,7 @@ def influx(config_util):
     influx_db = config_util.get_property(
         section=ConfigConst.INFLUX,
         key=ConfigConst.INFLUX_DB,
-        default_val="miza_new",
+        default_val="dongtien",
     )
     return InfluxRestClient(influx_host, influx_port, influx_db)
 
