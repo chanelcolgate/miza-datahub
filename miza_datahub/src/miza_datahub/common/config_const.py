@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 from datetime import timezone, timedelta
 
 EXCEL = "Excel"
@@ -34,6 +35,7 @@ TIMESCALEDB_DB = "db"
 TIMESCALEDB_USERNAME = "username"
 TIMESCALEDB_PASSWORD = "password"
 
-VN_TZ = timezone(timedelta(hours=7))
+# VN_TZ = timezone(timedelta(hours=7))
+VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"
