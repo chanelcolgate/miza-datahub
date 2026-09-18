@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def ignore_test_get_cut_roll_production(paper_daily_oee_query, debug=False):
+def test_get_cut_roll_production(paper_daily_oee_query, debug=True):
     cut_roll_production = paper_daily_oee_query.get_cut_roll_production(
         "2026-09-01"
     )

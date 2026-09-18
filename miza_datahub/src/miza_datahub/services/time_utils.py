@@ -58,13 +58,13 @@ class TimeUtils:
 
     @classmethod
     def date_str_to_vn_timestamp(
-        cls, date_str: str, fmt: str = "%d/%m/%Y"
+        cls, date_str: str, fmt: str = "%d/%m/%Y", hour: int = 0
     ) -> int:
         if not date_str or not isinstance(date_str, str):
             return 0
 
         # Parse string '29/08/2026' -> datetime(2026, 8, 29, 0, 0, 0)
         dt = datetime.strptime(date_str.strip(), fmt)
-        dt_7am = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        dt_7am = dt.replace(hour=hour, minute=0, second=0, microsecond=0)
 
         return cls.to_vn_timestamp(dt_7am)

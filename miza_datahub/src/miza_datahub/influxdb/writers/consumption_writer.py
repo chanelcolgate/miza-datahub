@@ -1,4 +1,5 @@
 from typing import Iterable
+from datetime import datetime, timedelta
 
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 from miza_datahub.influxdb.queries.oee.paper_daily_oee_query import (
@@ -20,7 +21,12 @@ class ConsumptionWriter(InfluxRepository):
 
     def compute_metrics_for_date_minus_1(self, date: str) -> dict:
         production = PaperDailyOEEQuery(self.client)
-        cut_roll_production = production.get_cut_roll_production(date) or 0.0
+        old_date = (
+            datetime.strptime(date, "%Y-%m-%d") - timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+        cut_roll_production = (
+            production.get_cut_roll_production(old_date) or 0.0
+        )
 
         air = AirRealtimeQuery(self.client)
         air_used = air.get_daily_air_v2(date) or 0.0
@@ -41,7 +47,12 @@ class ConsumptionWriter(InfluxRepository):
 
     def compute_metrics_for_date_minus_2(self, date: str) -> dict:
         production = PaperDailyOEEQuery(self.client)
-        cut_roll_production = production.get_cut_roll_production(date) or 0.0
+        old_date = (
+            datetime.strptime(date, "%Y-%m-%d") - timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+        cut_roll_production = (
+            production.get_cut_roll_production(old_date) or 0.0
+        )
 
         electric = ElectricRealtimeQuery(self.client)
         electric_used = electric.get_daily_electric(date) or 0.0

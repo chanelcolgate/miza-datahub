@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def test_compute_metrics_for_date_success(paper_daily_oee_writer, debug=False):
+def test_compute_metrics_for_date_success(paper_daily_oee_writer, debug=True):
     result = paper_daily_oee_writer.compute_metrics_for_date("2026-08-31")
     if debug:
         logger.info(f"Result: {result}")

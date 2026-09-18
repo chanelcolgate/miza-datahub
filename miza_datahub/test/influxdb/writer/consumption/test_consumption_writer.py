@@ -11,9 +11,9 @@ def test_compute_metrics_for_date_minus_1(consumption_writer, debug=False):
     if debug:
         logger.info(f"Result: {result}")
 
-    assert result["air_consumption"] == 2.25
-    assert result["water_consumption"] == 3.43
-    assert result["waste_water_consumption"] == 1.61
+    assert result["air_consumption"] == 2.22
+    assert result["water_consumption"] == 3.39
+    assert result["waste_water_consumption"] == 1.59
 
 
 def test_compute_metrics_for_date_minus_2(consumption_writer, debug=True):
@@ -22,7 +22,7 @@ def test_compute_metrics_for_date_minus_2(consumption_writer, debug=True):
     if debug:
         logger.info(f"Result: {result}")
 
-    assert result["electric_consumption"] == 474.91
+    assert result["electric_consumption"] == 468.49
 
 
 def test_write_for_dates_minus_1(consumption_writer, debug=False):

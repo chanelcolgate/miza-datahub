@@ -57,6 +57,7 @@ class InfluxRepository:
         factory: str,
         system: str,
         machine: str,
+        hour: int = 0,
     ) -> None:
         lines = []
         tags = [
@@ -70,7 +71,9 @@ class InfluxRepository:
             if not metrics or all(v == 0.0 for v in metrics.values()):
                 continue
 
-            timestamp = TimeUtils.date_str_to_vn_timestamp(date, fmt="%Y-%m-%d")
+            timestamp = TimeUtils.date_str_to_vn_timestamp(
+                date, fmt="%Y-%m-%d", hour=hour
+            )
             consumption_line = self._build_line_protocol(
                 measurement, tags, metrics, timestamp
             )

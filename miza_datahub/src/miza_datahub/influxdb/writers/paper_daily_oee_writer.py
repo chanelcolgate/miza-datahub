@@ -101,6 +101,7 @@ class PaperDailyOEEWriter(InfluxRepository):
             factory,
             system,
             machine,
+            hour=7,
         )
 
     def write_apq(
