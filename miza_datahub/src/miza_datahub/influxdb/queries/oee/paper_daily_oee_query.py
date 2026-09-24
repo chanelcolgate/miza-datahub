@@ -26,14 +26,16 @@ class PaperDailyOEEQuery(InfluxRepository):
 
     def get_cut_roll_production(self, date: str):
         query = f"""
-        SELECT
-            sum("weight") / 1000
-        FROM "cut_roll_production"
-        WHERE
-            time >= '{date}T07:00:00+07:00'
-            AND time <= '{date}T07:00:00+07:00' + 1d
-        GROUP BY time(1d,-7h) fill(none)
-        ORDER BY time ASC
+        SELECT SUM("weight") AS "value"
+        FROM(
+            SELECT sum("weight") / 1000 AS "weight"
+            FROM "cut_roll_production"
+            WHERE
+                time >= '{date}T07:00:00+07:00'
+                AND time <= '{date}T07:00:00+07:00' + 1d
+            GROUP BY time(1d,-7h) fill(none)
+            ORDER BY time ASC
+        )
         """
         result = self.query(query)
         return (
