@@ -31,6 +31,9 @@ from miza_datahub.postgres.queries.electricity_consumption_query import (
 )
 from miza_datahub.webscraping.evnspc_scraper import EVNSPCScraper
 from miza_datahub.influxdb.writers.consumption_writer import ConsumptionWriter
+from miza_datahub.influxdb.queries.oee.dongtien_realtime_query import (
+    DongTienRealtimeQuery,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -106,6 +109,11 @@ def electric_realtime_query(influx):
 @pytest.fixture(scope="session")
 def consumption_writer(influx):
     return ConsumptionWriter(influx)
+
+
+@pytest.fixture(scope="session")
+def dongtien_realtime_query(influx):
+    return DongTienRealtimeQuery(influx)
 
 
 @pytest.fixture(scope="session")

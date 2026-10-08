@@ -8,6 +8,20 @@ from miza_datahub.influxdb.influx_repository import InfluxRepository
 logger = logging.getLogger(__name__)
 
 
+class DongTienRealtimeQuery(InfluxRepository):
+    def get_shift_status(self, date: str):
+        query = f"""
+        SELECT last("b_run") AS "b_run"
+        FROM "dongtine_realtime"
+        WHERE "machine" = 'PM6'
+            AND time >= '{date}T07:00:00+07:00' - 5m
+            AND time <- '{date}T07:00:00+07:00' + 1d
+        GROUP BY time(1m) fill(previous)
+        """
+        result = self.query(query)
+        return result["results"][0].get("series", [{}])[0].get("values", [])[0]
+
+
 class MizaRealtimeQuery(InfluxRepository):
     """Query for miza_realtime measurement - Machine status data"""
 
