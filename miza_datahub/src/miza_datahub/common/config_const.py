@@ -3,6 +3,7 @@ from zoneinfo import ZoneInfo
 EXCEL = "Excel"
 DATA_PATH = "data_path"
 DATA_QUALITY_PATH = "data_quality_path"
+REPORT_TEMP = "report_temp"
 
 SELENIUM = "Selenium"
 URL = "url"
@@ -38,3 +39,9 @@ TIMESCALEDB_PASSWORD = "password"
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
 
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"
+
+REPORTS = "Reports"
+MIN_TON = "min_ton"
+PHASE_LOOPBACK_DAYS = "phase_loopback_days"
+NDIGITS = "ndigits"
+FIRST_ROW = "first_row"

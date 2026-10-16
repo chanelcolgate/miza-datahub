@@ -1,6 +1,8 @@
 import logging
 
 import pytest
+import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker
 
 from miza_datahub.common.config_util import ConfigUtil
 from miza_datahub.common import config_const as ConfigConst
@@ -34,6 +36,10 @@ from miza_datahub.influxdb.writers.consumption_writer import ConsumptionWriter
 from miza_datahub.influxdb.queries.oee.dongtien_realtime_query import (
     DongTienRealtimeQuery,
 )
+from miza_datahub.postgres.writers.daily_production_reports import (
+    DailyProductionReports,
+)
+from miza_datahub.postgres.postgres_repository import PostgresRepository
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,6 +50,8 @@ logger = logging.getLogger(__name__)
 
 collect_ignore = ["path/to/test/excluded"]
 collect_ignore_glob = ["*_ignore.py"]
+
+TEST_DATABASE_URL = "postgresql+psycopg2://odoo:odoo@localhost:32768/monitoring"
 
 
 @pytest.fixture(scope="session")
@@ -157,3 +165,65 @@ def scraper():
     scraper_instance = EVNSPCScraper(headless=True)
     yield scraper_instance
     scraper_instance.close()
+
+
+@pytest.fixture(scope="session")
+def db_engine():
+    engine = sa.create_engine(TEST_DATABASE_URL)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def db_session(db_engine):
+    connection = db_engine.connect()
+    transaction = connection.begin()
+    Session = sessionmaker(bind=connection)
+    session = Session()
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest.fixture(scope="session")
+def pg_repo(config_util):
+    postgres_host = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_HOST,
+        default_val="localhost",
+    )
+    postgres_port = config_util.get_int(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_PORT,
+        default_val=32768,
+    )
+    postgres_db = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_DB,
+        default_val="monitoring",
+    )
+    username = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_USERNAME,
+        default_val="odoo",
+    )
+    password = config_util.get_property(
+        section=ConfigConst.POSTGRES,
+        key=ConfigConst.POSTGRES_PASSWORD,
+        default_val="postgres",
+    )
+    return PostgresRepository(
+        host=postgres_host,
+        port=postgres_port,
+        database=postgres_db,
+        username=username,
+        password=password,
+    )
+
+
+@pytest.fixture(scope="session")
+def daily_production_reports(pg_repo, influx):
+    return DailyProductionReports(pg_repo, influx)
