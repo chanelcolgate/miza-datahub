@@ -21,7 +21,7 @@ def synthetic_prod(
 
 
 def test_tc01_export_report_to_excel(daily_production_reports):
-    daily_production_reports.export_report_to_excel()
+    daily_production_reports.export_report_to_excel(merge_spill=True)
 
 
 def test_tc02_get_finished_production(daily_production_reports, debug=False):
@@ -57,13 +57,41 @@ def test_tc02_get_finished_production(daily_production_reports, debug=False):
         logger.info(f"Result: {result}")
 
 
-def test_tc03_get_roll_production(daily_production_reports, debug=True):
+def test_tc03_get_roll_production(daily_production_reports, debug=False):
     result = daily_production_reports.get_roll_production(
-        from_date="2026-10-01", to_date="2026-10-03"
+        from_date="2026-10-01", to_date="2026-10-03", phase=3
     )
 
     if debug:
         logger.info(f"Result: {result}")
+
+
+def test_tc04_get_steam(daily_production_reports, debug=False):
+    result = daily_production_reports.get_steam(
+        from_date="2026-10-01", to_date="2026-10-02"
+    )
+
+    if debug:
+        logger.info(f"Result: {result}")
+
+
+def test_tc05_get_water(daily_production_reports, debug=False):
+    result = daily_production_reports.get_water(
+        from_date="2026-10-01", to_date="2026-10-02"
+    )
+
+    if debug:
+        logger.info(f"Result: {result}")
+
+
+def test_tc06_get_run_time(daily_production_reports, debug=True):
+    result = daily_production_reports.get_run_time(
+        from_date="2026-10-01", to_date="2026-10-02"
+    )
+
+    if debug:
+        logger.info(f"Run Time: {result[0]}")
+        logger.info(f"Down Time: {result[1]}")
 
 
 class TestOnDuty:

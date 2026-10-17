@@ -49,6 +49,10 @@ class DailyProductionReports:
         self.date_col = "A"
         self.finished_production_cols = {"A": "C", "B": "E", "C": "G"}
         self.roll_production_cols = {"A": "B", "B": "D", "C": "F"}
+        self.steam_cols = {"A": "Q", "B": "S", "C": "U"}
+        self.water_cols = {"A": "Y", "B": "AA", "C": "AC"}
+        self.run_time_cols = {"A": "AP", "B": "AT", "C": "AX"}
+        self.down_time_cols = {"A": "AO", "B": "AS", "C": "AW"}
 
         self.min_ton = config_util.get_float(
             section=ConfigConst.REPORTS,
@@ -188,7 +192,22 @@ class DailyProductionReports:
                 if finished_production
                 else 0
             )
-        cols = self.build_columns(days, finished_production, phase, merge_spill)
+
+        roll_production = self.get_roll_production(q_start, q_end, phase=phase)
+        steam = self.get_steam(q_start, q_end, phase=phase)
+        water = self.get_water(q_start, q_end, phase=phase)
+        run_time, down_time = self.get_run_time(q_start, q_end, phase=phase)
+
+        cols_finished = self.build_columns(
+            days, finished_production, phase, merge_spill
+        )
+        cols_roll = self.build_columns(
+            days, roll_production, phase, merge_spill
+        )
+        cols_steam = self.build_columns(days, steam, phase, merge_spill)
+        cols_water = self.build_columns(days, water, phase, merge_spill)
+        cols_run_time = self.build_columns(days, run_time, phase, merge_spill)
+        cols_down_time = self.build_columns(days, down_time, phase, merge_spill)
 
         wb = openpyxl.load_workbook(self.report_temp)
 
@@ -215,7 +234,44 @@ class DailyProductionReports:
                 )
             for crew, col in self.finished_production_cols.items():
                 excel.write(
-                    ws, [[v] for v in cols[crew][i : i + n]], f"{col}{row0}"
+                    ws,
+                    [[v] for v in cols_finished[crew][i : i + n]],
+                    f"{col}{row0}",
+                )
+
+            for crew, col in self.roll_production_cols.items():
+                excel.write(
+                    ws,
+                    [[v] for v in cols_roll[crew][i : i + n]],
+                    f"{col}{row0}",
+                )
+
+            for crew, col in self.steam_cols.items():
+                excel.write(
+                    ws,
+                    [[v] for v in cols_steam[crew][i : i + n]],
+                    f"{col}{row0}",
+                )
+
+            for crew, col in self.water_cols.items():
+                excel.write(
+                    ws,
+                    [[v] for v in cols_water[crew][i : i + n]],
+                    f"{col}{row0}",
+                )
+
+            for crew, col in self.run_time_cols.items():
+                excel.write(
+                    ws,
+                    [[v] for v in cols_run_time[crew][i : i + n]],
+                    f"{col}{row0}",
+                )
+
+            for crew, col in self.down_time_cols.items():
+                excel.write(
+                    ws,
+                    [[v] for v in cols_down_time[crew][i : i + n]],
+                    f"{col}{row0}",
                 )
             print(f"Đã điền {n} ngày vào sheet '{ws.title}' từ hàng {row0}")
             i += n
@@ -248,9 +304,10 @@ class DailyProductionReports:
                 d = dt_vn.date()
                 prod.setdefault(d, {})[crew] = value
 
+        # return dict(sorted(prod.items(), key=lambda kv: kv[0]))
         return prod
 
-    def get_roll_production(self, from_date: str, to_date: str):
+    def get_roll_production(self, from_date: str, to_date: str, phase: int = 0):
         query = f"""
         SELECT SUM("hourly_production") AS "production"
         FROM (
@@ -267,7 +324,7 @@ class DailyProductionReports:
                 WHERE
                     "machine" = 'PM6'
                     AND time >= '{from_date}T07:00:00+07:00'
-                    AND time <= '{to_date}T07:00:00+07:00'
+                    AND time <= '{to_date}T07:00:00+07:00' + 1d
                 GROUP BY time(1m)
                 fill(none)
             )
@@ -275,12 +332,165 @@ class DailyProductionReports:
             fill(0)
         )
         WHERE time >= '{from_date}T07:00:00+07:00'
-            AND time <= '{to_date}T07:00:00+07:00'
+            AND time <= '{to_date}T07:00:00+07:00' + 1d
         GROUP BY time(12h)
         fill(none)
         """
         raw = self.realtime_repo.query(query)
-        return raw["results"][0].get("series", [{}])
+        series = raw["results"][0].get("series", [{}])
+        prod_by_date: Dict[date, Dict[str, float]] = {}
+
+        for s in series:
+            for time_str, value in s.get("values", []):
+                if value is None:
+                    continue
+                dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+                dt_vn = dt_utc + timedelta(hours=7)
+                d = dt_vn.date()
+
+                duty = self.on_duty(d, phase)
+                hour = dt_vn.hour
+                crew = duty[0] if 7 <= hour < 19 else duty[1]
+
+                prod_by_date.setdefault(d, {})
+                prod_by_date[d][crew] = prod_by_date[d].get(crew, 0.0) + float(
+                    value
+                )
+
+        # round per config ndigits
+        for d, crews in prod_by_date.items():
+            for c in list(crews.keys()):
+                crews[c] = round(crews[c], self.ndigits)
+
+        # return dict(sorted(prod_by_date.items(), key=lambda kv: kv[0]))
+        return prod_by_date
+
+    def get_steam(self, from_date: str, to_date: str, phase: int = 0):
+        query = f"""
+            SELECT sum("flow_actual") / 60 AS "steam"
+            FROM "dongtien_realtime"
+            WHERE
+                "machine"::tag = 'Lưu lượng hơi tổng'
+                AND time >= '{from_date}T07:00:00+07:00'
+                AND time <= '{to_date}T07:00:00+07:00' + 1d
+            GROUP BY time(1d), "shift"::tag
+            fill(none)
+        """
+        raw = self.realtime_repo.query(query)
+        series = raw["results"][0].get("series", [{}])
+        prod_by_date: Dict[date, Dict[str, float]] = {}
+
+        for s in series:
+            shift = s["tags"]["shift"]
+            for time_str, value in s.get("values", []):
+                if value is None:
+                    continue
+                dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+                dt_vn = dt_utc + timedelta(hours=7)
+                d = dt_vn.date()
+
+                duty = self.on_duty(d, phase)
+                hour = dt_vn.hour
+                crew = duty[0] if shift == "Ca 1" else duty[1]
+
+                prod_by_date.setdefault(d, {})
+                prod_by_date[d][crew] = prod_by_date[d].get(crew, 0.0) + float(
+                    value
+                )
+
+        # round per config ndigits
+        for d, crews in prod_by_date.items():
+            for c in list(crews.keys()):
+                crews[c] = round(crews[c], self.ndigits)
+
+        return prod_by_date
+
+    def get_water(self, from_date: str, to_date: str, phase: int = 0):
+        query = f"""
+        SELECT sum("hourly_consumption") AS "water"
+        FROM (
+            SELECT non_negative_derivative(last("value"),1h) AS "hourly_consumption"
+            FROM "water_measurement"
+            WHERE ("sub_system"::tag = 'Lưu lượng bể 100 m3')
+                AND time >= '{from_date}T07:00:00+07:00'
+                AND time <= '{to_date}T07:00:00+07:00' + 1d
+            GROUP BY time(1h), "shift"::tag fill(none)
+        )
+        WHERE time >= '{from_date}T07:00:00+07:00'
+            AND time <= '{to_date}T07:00:00+07:00' + 1d
+        GROUP BY time(12h), "shift"::tag fill(none)
+        """
+        raw = self.realtime_repo.query(query)
+        series = raw["results"][0].get("series", [{}])
+        prod_by_date: Dict[date, Dict[str, float]] = {}
+
+        for s in series:
+            shift = s["tags"]["shift"]
+            for time_str, value in s.get("values", []):
+                if value is None:
+                    continue
+                dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+                dt_vn = dt_utc + timedelta(hours=7)
+                d = dt_vn.date()
+
+                duty = self.on_duty(d, phase)
+                hour = dt_vn.hour
+                crew = duty[0] if shift == "Ca 1" else duty[1]
+
+                prod_by_date.setdefault(d, {})
+                prod_by_date[d][crew] = prod_by_date[d].get(crew, 0.0) + float(
+                    value
+                )
+
+        for d, crews in prod_by_date.items():
+            for c in list(crews.keys()):
+                crews[c] = round(crews[c], self.ndigits)
+
+        return prod_by_date
+
+    def get_run_time(self, from_date: str, to_date: str, phase: int = 0):
+        query = f"""
+            SELECT mean("b_status") * 12
+            FROM "dongtien_realtime"
+            WHERE time >= '{from_date}T07:00:00+07:00'
+                AND time <= '{to_date}T07:00:00+07:00' + 1d
+            GROUP BY time(12h) fill(none)
+        """
+        raw = self.realtime_repo.query(query)
+        series = raw["results"][0].get("series", [{}])
+        run_time_raw: Dict[date, Dict[str, float]] = {}
+        down_time_raw: Dict[date, Dict[str, float]] = {}
+
+        for s in series:
+            for time_str, value in s.get("values", []):
+                if value is None:
+                    continue
+                dt_utc = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ")
+                dt_vn = dt_utc + timedelta(hours=7)
+                d = dt_vn.date()
+
+                duty = self.on_duty(d, phase)
+                hour = dt_vn.hour
+                crew = duty[0] if 7 <= hour < 19 else duty[1]
+
+                run_time_raw.setdefault(d, {})
+                down_time_raw.setdefault(d, {})
+
+                run_time_raw[d][crew] = run_time_raw[d].get(crew, 0.0) + float(
+                    value
+                )
+
+        run_time_formatted: Dict[date, Dict[str, str]] = {}
+        down_time_formatted: Dict[date, Dict[str, str]] = {}
+        for d, crews in run_time_raw.items():
+            run_time_formatted[d] = {
+                c: grafana_time.hours_to_hhmm(h) for c, h in crews.items()
+            }
+            down_time_formatted[d] = {
+                c: grafana_time.hours_to_hhmm(12 - h) for c, h in crews.items()
+            }
+
+        return run_time_formatted, down_time_formatted
 
     def on_duty(self, d, phase):
         """Cặp kíp theo chu kỳ xoay tua của ngày d."""
@@ -346,5 +556,12 @@ class DailyProductionReports:
             duty = self.on_duty(d, phase)
             for c in "ABC":
                 v = tons.get(d, {}).get(c) if c in duty else None
-                cols[c].append(round(v, self.ndigits) if v else 0)
+
+                if v is None:
+                    cols[c].append(0)
+                elif isinstance(v, (int, float)):
+                    cols[c].append(round(v, self.ndigits))
+                else:
+                    cols[c].append(v)
+                # cols[c].append(round(v, self.ndigits) if v else 0)
         return cols

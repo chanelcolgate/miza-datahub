@@ -141,3 +141,12 @@ def resolve_days(from_time, to_time, *, now=None, tz=TZ, week_start=0):
         last -= timedelta(days=1)
     days = [first + timedelta(days=i) for i in range((last - first).days + 1)]
     return days, start, end
+
+
+def hours_to_hhmm(hours: float) -> str:
+    if hours is None or hours < 0:
+        return "00:00"
+    total_minutes = round(hours * 60)
+    h = total_minutes // 60
+    m = total_minutes % 60
+    return time(hour=h, minute=m, second=0)
