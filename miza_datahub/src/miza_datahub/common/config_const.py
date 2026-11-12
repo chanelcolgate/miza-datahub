@@ -1,5 +1,15 @@
+from zoneinfo import ZoneInfo
+
 EXCEL = "Excel"
 DATA_PATH = "data_path"
+DATA_QUALITY_PATH = "data_quality_path"
+REPORT_TEMP = "report_temp"
+
+SELENIUM = "Selenium"
+URL = "url"
+USERNAME = "username"
+PASSWORD = "password"
+CAPTCHA_DIR = "captcha_dir"
 
 TELEGRAM = "Telegram"
 TOKEN = "token"
@@ -11,4 +21,27 @@ INFLUX_HOST = "host"
 INFLUX_PORT = "port"
 INFLUX_DB = "db"
 
+POSTGRES = "Postgres"
+POSTGRES_HOST = "host"
+POSTGRES_PORT = "port"
+POSTGRES_DB = "db"
+POSTGRES_USERNAME = "username"
+POSTGRES_PASSWORD = "password"
+
+TIMESCALEDB = "TimescaleDB"
+TIMESCALEDB_HOST = "host"
+TIMESCALEDB_PORT = "port"
+TIMESCALEDB_DB = "db"
+TIMESCALEDB_USERNAME = "username"
+TIMESCALEDB_PASSWORD = "password"
+
+# VN_TZ = timezone(timedelta(hours=7))
+VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
+
 DEFAULT_CONFIG_FILE_NAME = "./config/miza_datahub_config.props"
+
+REPORTS = "Reports"
+MIN_TON = "min_ton"
+PHASE_LOOPBACK_DAYS = "phase_loopback_days"
+NDIGITS = "ndigits"
+FIRST_ROW = "first_row"

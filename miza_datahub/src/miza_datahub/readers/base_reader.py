@@ -31,11 +31,24 @@ class BaseReader(ABC):
                     token=token, file_path=file_path
                 )
             ).content
+        # HTTP/HTTPS
+        elif file_path and file_path.startswith(("http://", "https://")):
+            headers = {"User-Agent": "Mozilla/5.0"}
 
+            response = requests.get(
+                file_path,
+                headers=headers,
+                params={"download": 1},
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+            self.file_bytes = response.content
         # file local
         elif file_path:
             with open(file_path, "rb") as f:
                 self.file_bytes = f.read()
+        else:
+            raise ValueError("Either file_id or file_path must be provided.")
 
         # InfluxDB
         influx_host = config_util.get_property(
@@ -54,6 +67,33 @@ class BaseReader(ABC):
             default_val="miza_new",
         )
         self.influx = InfluxRestClient(influx_host, influx_port, influx_db)
+
+        # TimescaleDB
+        self.timescaledb_host = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_HOST,
+            default_val="192.168.10.2",
+        )
+        self.timescaledb_port = config_util.get_int(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_PORT,
+            default_val=5432,
+        )
+        self.timescaledb_db = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_DB,
+            default_val="monitoring",
+        )
+        self.timescaledb_usr = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_USERNAME,
+            default_val="odoo",
+        )
+        self.timescaledb_pass = config_util.get_property(
+            section=ConfigConst.TIMESCALEDB,
+            key=ConfigConst.TIMESCALEDB_PASSWORD,
+            default_val="odoo",
+        )
 
     @abstractmethod
     def load(self):
