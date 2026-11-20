@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from miza_datahub.common import config_const as ConfigConst
+from miza_datahub.services import shift_calendar
 
 
 class TimeUtils:
@@ -26,8 +27,8 @@ class TimeUtils:
     ) -> Tuple[str, str]:
         """
         Tính toán khoảng thời gian (start_time, end_time) theo
-        ca kíp nhà máy (6h sáng).
-        Trả về: (start_time_str, end_time_sr)
+        ngày sản xuất bắt đầu lúc 07:00.
+        Trả về: (start_time_str, end_time_str)
         """
         now_vn = datetime.now(ConfigConst.VN_TZ)
         current_date_real = now_vn.date()
@@ -36,23 +37,26 @@ class TimeUtils:
             date = current_date_real.strftime("%Y-%m-%d")
 
         input_date = datetime.strptime(date, "%Y-%m-%d").date()
-
         start_date = input_date
-        end_time_str = f"'{date}T06:00:00+07:00' + 1d"
+
+        if (
+            input_date == current_date_real
+            and now_vn.hour < shift_calendar.PRODUCTION_DAY_START_HOUR
+        ):
+            start_date = input_date - timedelta(days=1)
+
+        start_time_str = shift_calendar.production_day_start(
+            start_date
+        ).isoformat()
 
         if input_date == current_date_real:
-            if now_vn.hour < 6:
-                start_date = input_date - timedelta(days=1)
-                end_time_str = (
-                    f"'{now_vn.strftime('%Y-%m-%dT%H:%M:%S+07:00')}' - 35m"
-                )
-            else:
-                start_date = input_date
-                end_time_str = (
-                    f"'{now_vn.strftime('%Y-%m-%dT%H:%M:%S+07:00')}' - 35m"
-                )
-
-        start_time_str = f"{start_date.strftime('%Y-%m-%d')}T06:00:00+07:00"
+            end_time_str = (
+                f"'{now_vn.replace(microsecond=0).isoformat()}' - 35m"
+            )
+        else:
+            end_time_str = (
+                f"'{shift_calendar.production_day_end(input_date).isoformat()}'"
+            )
 
         return start_time_str, end_time_str
 

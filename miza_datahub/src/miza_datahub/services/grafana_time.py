@@ -111,7 +111,8 @@ def parse_grafana_time(expr, *, is_to=False, now=None, tz=TZ, week_start=0):
             (n if n >= 10**11 else n * 1000) / 1000, tz
         )
     try:
-        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        # dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(s)
     except ValueError as e:
         raise ValueError(f"Không hiểu thời gian: '{expr}'") from e
     if dt.tzinfo is None:  # không có múi giờ -> coi là giờ VN
@@ -149,4 +150,4 @@ def hours_to_hhmm(hours: float) -> str:
     total_minutes = round(hours * 60)
     h = total_minutes // 60
     m = total_minutes % 60
-    return time(hour=h, minute=m, second=0)
+    return f"{h:02d}:{m:02d}"

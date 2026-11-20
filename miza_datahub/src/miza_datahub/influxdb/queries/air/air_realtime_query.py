@@ -1,12 +1,11 @@
-from typing import Optional
-from calendar import monthrange
-
+from miza_datahub.services import shift_calendar
 from miza_datahub.services.time_utils import TimeUtils
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
 class AirRealtimeQuery(InfluxRepository):
     def get_daily_air_v2(self, date: str):
+        start, end = shift_calendar.production_day_range(date)
         query = f"""
         SELECT
             SUM("steam_used") as "air_used"
@@ -17,8 +16,8 @@ class AirRealtimeQuery(InfluxRepository):
             FROM "dongtien_realtime"
             WHERE
                 "machine" = 'Lưu lượng hơi tổng'
-                AND time >= '{date}T07:00:00+07:00'
-                AND time <= '{date}T07:00:00+07:00' + 1d
+                AND time >= '{start.isoformat()}'
+                AND time < '{end.isoformat()}'
             GROUP BY time(1d) fill(none)
         )
         """
@@ -27,7 +26,7 @@ class AirRealtimeQuery(InfluxRepository):
             result["results"][0].get("series", [{}])[0].get("values", [])[0][1]
         )
 
-    def get_daily_air(self, date: Optional[str] = None, interval: str = "1d"):
+    def get_daily_air(self, date: str | None = None, interval: str = "1d"):
         start_time_str, end_time_str = TimeUtils().get_production_time_range(
             date
         )
@@ -43,12 +42,12 @@ class AirRealtimeQuery(InfluxRepository):
                 WHERE
                     "machine" =~ /^Đường hơi (1|2)$/
                     AND time >= '{start_time_str}'
-                    AND time <= {end_time_str}
+                    AND time < {end_time_str}
                 GROUP BY
                     time(1h),
                     "machine"::tag
             )
-            GROUP BY time({interval}, 6h)
+            GROUP BY time({interval}, 7h)
             fill(none)
             TZ('Asia/Ho_Chi_Minh')
         """
@@ -59,18 +58,15 @@ class AirRealtimeQuery(InfluxRepository):
         self, year: int, month: int | None = None, interval: str = "1d"
     ):
         if month is not None:
-            last_day = monthrange(year, month)[1]
-            start_time_str = f"'{year}-{month:02d}-01T06:00:00+07:00'"
-            end_time_str = (
-                f"'{year}-{month:02d}-{last_day}T06:00:00+07:00' + 1d"
-            )
+            start, end = shift_calendar.production_month_range(year, month)
         else:
-            start_time_str = f"'{year}-01-01T06:00:00+07:00'"
-            end_time_str = f"'{year+1}-01-01T06:00:00+07:00'"
+            start, end = shift_calendar.production_year_range(year)
+        start_time_str = f"'{start.isoformat()}'"
+        end_time_str = f"'{end.isoformat()}'"
 
         if interval == "1d":
             group_by = f"""
-                GROUP BY time({interval}, 6h)
+                GROUP BY time({interval}, 7h)
             """
         else:
             group_by = ""
@@ -86,7 +82,7 @@ class AirRealtimeQuery(InfluxRepository):
                 WHERE
                     "machine" =~ /^Đường hơi (1|2)$/
                     AND time >= {start_time_str}
-                    AND time <= {end_time_str}
+                    AND time < {end_time_str}
                 GROUP BY
                     time(1h),
                     "machine"::tag

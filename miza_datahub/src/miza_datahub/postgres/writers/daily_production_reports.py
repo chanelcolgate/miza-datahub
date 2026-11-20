@@ -81,9 +81,13 @@ class DailyProductionReports:
             CREATE TABLE IF NOT EXISTS {self.PG_TABLE} (
                 report_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 report_date DATE NOT NULL,
-                shift_no INT DEFAULT NULL,
-                grade_id UUID,
-                crew_id UUID,
+                shift_no INT NOT NULL CHECK (shift_no IN (1, 2)),
+                equipment_id UUID NOT NULL REFERENCES equipment(equipment_id)
+                    ON DELETE RESTRICT,
+                grade_id UUID REFERENCES paper_grades(grade_id)
+                    ON DELETE RESTRICT,
+                crew_id UUID REFERENCES crews(crew_id)
+                    ON DELETE RESTRICT,
                 -- Sản lượng (Tấn)
                 actual_production_ton FLOAT DEFAULT 0.0,
                 warehouse_in_ton FLOAT DEFAULT 0.0,
@@ -106,8 +110,8 @@ class DailyProductionReports:
                 production_notes TEXT,
                 created_at TIMESTAMPTZ DEFAULT NOW(),
                 updated_at TIMESTAMPTZ DEFAULT NOW(),
-                CONSTRAINT uk_report_date_shift UNIQUE (
-                    report_date, shift_no
+                CONSTRAINT uk_report_date_shift_equipment UNIQUE (
+                    report_date, shift_no, equipment_id
                 )
             );
         """
@@ -123,12 +127,17 @@ class DailyProductionReports:
         # ensure table
         self.ensure_table_exists()
 
+        if "equipment_id" not in df.columns:
+            raise ValueError(
+                "equipment_id is required for daily production reports"
+            )
+
         insert_sql = f"""
             INSERT INTO {self.PG_TABLE} (
-                report_date, shift_no, grade_id, crew_id,
+                report_date, shift_no, equipment_id, grade_id, crew_id,
                 actual_production_ton, downtime_hours, production_notes
             ) VALUES (
-                :report_date, :shift_no, :grade_id, :crew_id,
+                :report_date, :shift_no, :equipment_id, :grade_id, :crew_id,
                 :actual_production_ton, :downtime_hours, :production_notes
             )
         """
@@ -139,6 +148,7 @@ class DailyProductionReports:
                 {
                     "report_date": row["report_date"].isoformat(),
                     "shift_no": row["shift_no"],
+                    "equipment_id": row["equipment_id"],
                     "grade_id": row["grade_id"],
                     "crew_id": row["crew_id"],
                     "actual_production_ton": row["actual_production_ton"],
@@ -220,7 +230,9 @@ class DailyProductionReports:
         # data = [[110.5], [110.5], [110.5]]
         # excel.write(ws, data, "D17")
         i = 0
-        for (y, m), grp in groupby(days, key=lambda d: (d.year, d.month)):
+        for (_year, _month), grp in groupby(
+            days, key=lambda d: (d.year, d.month)
+        ):
             g_days = list(grp)
             n = len(g_days)
 
@@ -358,7 +370,7 @@ class DailyProductionReports:
                 )
 
         # round per config ndigits
-        for d, crews in prod_by_date.items():
+        for _d, crews in prod_by_date.items():
             for c in list(crews.keys()):
                 crews[c] = round(crews[c], self.ndigits)
 
@@ -390,7 +402,6 @@ class DailyProductionReports:
                 d = dt_vn.date()
 
                 duty = self.on_duty(d, phase)
-                hour = dt_vn.hour
                 crew = duty[0] if shift == "Ca 1" else duty[1]
 
                 prod_by_date.setdefault(d, {})
@@ -399,7 +410,7 @@ class DailyProductionReports:
                 )
 
         # round per config ndigits
-        for d, crews in prod_by_date.items():
+        for _d, crews in prod_by_date.items():
             for c in list(crews.keys()):
                 crews[c] = round(crews[c], self.ndigits)
 
@@ -409,7 +420,9 @@ class DailyProductionReports:
         query = f"""
         SELECT sum("hourly_consumption") AS "water"
         FROM (
-            SELECT non_negative_derivative(last("value"),1h) AS "hourly_consumption"
+            SELECT non_negative_derivative(
+                last("value"), 1h
+            ) AS "hourly_consumption"
             FROM "water_measurement"
             WHERE ("sub_system"::tag = 'Lưu lượng bể 100 m3')
                 AND time >= '{from_date}T07:00:00+07:00'
@@ -434,7 +447,6 @@ class DailyProductionReports:
                 d = dt_vn.date()
 
                 duty = self.on_duty(d, phase)
-                hour = dt_vn.hour
                 crew = duty[0] if shift == "Ca 1" else duty[1]
 
                 prod_by_date.setdefault(d, {})
@@ -442,7 +454,7 @@ class DailyProductionReports:
                     value
                 )
 
-        for d, crews in prod_by_date.items():
+        for _d, crews in prod_by_date.items():
             for c in list(crews.keys()):
                 crews[c] = round(crews[c], self.ndigits)
 

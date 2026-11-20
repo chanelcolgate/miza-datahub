@@ -69,7 +69,7 @@ class PaperMachineRepository(InfluxRepository):
                 AND time <= '{end_time}'
             GROUP BY time(1m)
         )
-        GROUP BY time(1d, 6h)
+        GROUP BY time(1d, 7h)
         fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """
@@ -99,7 +99,7 @@ class PaperMachineRepository(InfluxRepository):
                 AND time <= '{end_time}'
             GROUP BY time(1m)
         )
-        GROUP BY time(1d, 6h)
+        GROUP BY time(1d, 7h)
         fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """
