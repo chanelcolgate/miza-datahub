@@ -36,7 +36,9 @@ class ElectricityWriter(InfluxRepository):
         for _, row in df.iterrows():
             ts_00 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"])
 
-            ts_06 = TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) + 21600
+            ts_production_day = (
+                TimeUtils.date_str_to_vn_timestamp(row["timestamp"]) + 25200
+            )
 
             metrics_00 = [
                 ("Bình Thường", row["normal_tier"]),
@@ -57,13 +59,13 @@ class ElectricityWriter(InfluxRepository):
                 lines.append(line)
 
             if pd.notna(row["total_shift"]):
-                name_esc = self.escape_string("Tổng Ca 6h")
+                name_esc = self.escape_string("Tổng Ca 7h")
                 line_shift = (
                     f"{self.MEASUREMENT},"
                     f"factory={factory_esc},"
                     f"machine={self.MACHINE_NAME},"
                     f"name={name_esc} "
-                    f"value={row['total_shift']} {ts_06}"
+                    f"value={row['total_shift']} {ts_production_day}"
                 )
                 lines.append(line_shift)
 

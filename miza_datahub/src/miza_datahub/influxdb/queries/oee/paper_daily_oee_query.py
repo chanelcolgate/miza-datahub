@@ -1,6 +1,6 @@
-from calendar import monthrange
 from datetime import datetime, timedelta
 
+from miza_datahub.services import shift_calendar
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
 
@@ -144,6 +144,7 @@ class PaperDailyOEEQuery(InfluxRepository):
 
     def get_daily_all_values(self, date: str):
         """Get daily average all values"""
+        start, end = shift_calendar.production_day_range(date)
         query = f"""
         SELECT
             mean("A"),
@@ -157,8 +158,8 @@ class PaperDailyOEEQuery(InfluxRepository):
             sum("down_time")
         FROM "paper_daily_oee"
         WHERE
-            time >= '{date}T06:00:00+07:00'
-            AND time <= '{date}T06:00:00+07:00' + 1d
+            time >= '{start.isoformat()}'
+            AND time < '{end.isoformat()}'
         GROUP BY time(1m) fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """
@@ -167,7 +168,7 @@ class PaperDailyOEEQuery(InfluxRepository):
 
     def get_monthly_all_values(self, year: int, month: int):
         """Get monthly all values"""
-        last_day = monthrange(year, month)[1]
+        start, end = shift_calendar.production_month_range(year, month)
         query = f"""
         SELECT
             mean("A"),
@@ -181,8 +182,8 @@ class PaperDailyOEEQuery(InfluxRepository):
             sum("down_time")
         FROM "paper_daily_oee"
         WHERE
-            time >= '{year}-{month:02d}-01T06:00:00+07:00'
-            AND time <= '{year}-{month:02d}-{last_day}T06:00:00+07:00' + 1d
+            time >= '{start.isoformat()}'
+            AND time < '{end.isoformat()}'
         TZ('Asia/Ho_Chi_Minh')
         """
         result = self.query(query)
@@ -190,6 +191,7 @@ class PaperDailyOEEQuery(InfluxRepository):
 
     def get_yearly_all_values(self, year: int):
         """Get yearly all values"""
+        start, end = shift_calendar.production_year_range(year)
         query = f"""
         SELECT
             mean("A"),
@@ -203,8 +205,8 @@ class PaperDailyOEEQuery(InfluxRepository):
             sum("down_time")
         FROM "paper_daily_oee"
         WHERE
-            time >= '{year}-01-01T06:00:00+07:00'
-            AND time <= '{year+1}-01-01T06:00:00+07:00'
+            time >= '{start.isoformat()}'
+            AND time < '{end.isoformat()}'
         TZ('Asia/Ho_Chi_Minh')
         """
         result = self.query(query)
@@ -228,7 +230,7 @@ class PaperDailyOEEQuery(InfluxRepository):
         WHERE
             time >= '{start_time}'
             AND time <= '{end_time}' + 1d
-        GROUP BY time({interval}, 6h)
+        GROUP BY time({interval}, 7h)
         fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """

@@ -1,7 +1,7 @@
 import logging
-from calendar import monthrange
 from typing import Optional
 
+from miza_datahub.services import shift_calendar
 from miza_datahub.services.time_utils import TimeUtils
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
@@ -10,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 class DongTienRealtimeQuery(InfluxRepository):
     def get_shift_status(self, date: str):
+        start, end = shift_calendar.production_day_range(date)
         query = f"""
         SELECT last("b_run") AS "b_run"
         FROM "dongtine_realtime"
         WHERE "machine" = 'PM6'
-            AND time >= '{date}T07:00:00+07:00' - 5m
-            AND time <- '{date}T07:00:00+07:00' + 1d
+            AND time >= '{start.isoformat()}' - 5m
+            AND time < '{end.isoformat()}'
         GROUP BY time(1m) fill(previous)
         """
         result = self.query(query)
@@ -41,10 +42,10 @@ class MizaRealtimeQuery(InfluxRepository):
             WHERE
                 ("machine"::tag = '{self.MACHINE}')
                 AND time >= '{start_time_str}'
-                AND time <= {end_time_str}
+                AND time < {end_time_str}
             GROUP BY time(1m) fill(null)
         )
-        GROUP BY time(1d, 6h)
+        GROUP BY time(1d, 7h)
         fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """
@@ -84,7 +85,7 @@ class MizaRealtimeQuery(InfluxRepository):
                             line='Máy giấy PM3'
                             AND machine='Scanner'
                             AND time >= '{start_time_str}'
-                            AND time <= {end_time_str}
+                            AND time < {end_time_str}
                         GROUP BY time(1m)
                         fill(none)
                     ), (
@@ -100,7 +101,7 @@ class MizaRealtimeQuery(InfluxRepository):
                             line='Máy giấy PM3'
                             AND machine='Scanner'
                             AND time >= '{start_time_str}'
-                            AND time <= {end_time_str}
+                            AND time < {end_time_str}
                         GROUP BY time(1m)
                         fill(none)
                     )
@@ -128,15 +129,15 @@ class MizaRealtimeQuery(InfluxRepository):
 
     def get_monthly_availability(self, year: int, month: int):
         """Get monthly average availability"""
-        last_day = monthrange(year, month)[1]
+        start, end = shift_calendar.production_month_range(year, month)
         query = f"""
         SELECT mean("A") FROM (
             SELECT mean("b_status") * 100 as "A"
             FROM "miza_realtime"
             WHERE
                 ("machine"::tag = '{self.MACHINE}')
-                AND time >= '{year}-{month:02d}-01T06:00:00+07:00'
-                AND time <= '{year}-{month:02d}-{last_day}T06:00:00+07:00' + 1d
+                AND time >= '{start.isoformat()}'
+                AND time < '{end.isoformat()}'
             GROUP BY time(1m) fill(null)
         )
         """
@@ -145,14 +146,15 @@ class MizaRealtimeQuery(InfluxRepository):
 
     def get_yearly_availability(self, year: int):
         """Get yearly average availability"""
+        start, end = shift_calendar.production_year_range(year)
         query = f"""
         SELECT mean("A") FROM (
             SELECT mean("b_status") * 100 as "A"
             FROM "miza_realtime"
             WHERE
                 ("machine"::tag = '{self.MACHINE}')
-                AND time >= '{year}-01-01T06:00:00+07:00'
-                AND time <= '{year+1}-01-01T06:00:00+07:00'
+                AND time >= '{start.isoformat()}'
+                AND time < '{end.isoformat()}'
             GROUP BY time(1m) fill(null)
         ) TZ('Asia/Ho_Chi_Minh')
         """
@@ -174,7 +176,7 @@ class MizaRealtimeQuery(InfluxRepository):
             GROUP BY time(1m)
             fill(null)
         )
-        GROUP BY time({interval}, 6h)
+        GROUP BY time({interval}, 7h)
         fill(none)
         TZ('Asia/Ho_Chi_Minh')
         """

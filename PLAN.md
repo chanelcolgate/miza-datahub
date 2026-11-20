@@ -48,9 +48,10 @@ original proposal (not the current implementation).
 | Long-running imports | External queue + worker; `202 Accepted` + `Import` resource |
 | Idempotency | Mandatory `Idempotency-Key` for all import creation |
 | API versioning | URI `/v1` |
-| Production day | Configurable per line; one canonical config source |
+| Production day | Fixed `07:00` company-wide in `Asia/Ho_Chi_Minh` |
+| Shift model | Fixed company-wide: `shift_no` 1 = `07:00-19:00`, 2 = `19:00-07:00` |
 | PII exposure | Full quality data only with an admin/PII scope |
-| Postgres report module | Delete; it is dead and broken |
+| Postgres report module | Keep and update; it is tested but not wired into the API |
 | Legacy endpoints | Keep temporarily, marked deprecated, then remove |
 
 ---
@@ -64,8 +65,10 @@ original proposal (not the current implementation).
   `500` because `ReaderFactory.create` may return `None`.
 - Ingestion is synchronous and writes directly to InfluxDB.
 - `OEEService.calculate_pq` currently zeroes the Q column.
-- Production-day boundaries are inconsistent (`06:00` vs `07:00`).
-- The Postgres report writer imports modules and constants that do not exist.
+- Legacy production-day callers still use `06:00` or three shifts;
+  new code must use `ShiftCalendar` (`07:00`, two shifts).
+- The Postgres report writer imports correctly on Python 3.11 and has tests,
+  but it is not wired into the FastAPI app.
 
 ---
 
@@ -122,8 +125,8 @@ unhandled `None` reader, and production-day behavior covered by tests.
   path containment, MIME/magic validation, size/page/sheet limits.
 - [ ] **P0-7** Remove server filesystem paths and internal identifiers from
   responses.
-- [ ] **P0-8** Centralize the production-day boundary in one config source and
-  use it for OEE, quality, and Influx queries.
+- [ ] **P0-8** Centralize the `07:00` production-day boundary and two-shift
+  windows in `ShiftCalendar`; use it for OEE, quality, and Influx queries.
 - [ ] **P0-9** Add `/healthz`, `/readyz`, and request IDs.
 - [ ] **P0-10** Add HTTP-level tests with the library mocked.
 
@@ -149,17 +152,20 @@ are deprecated but functional.
 - [ ] **P1-4** Abstract job execution behind an interface; an in-process runner
   is allowed until Phase 3.
 - [ ] **P1-5** Implement `GET /v1/imports` and `GET /v1/imports/{import_id}`.
-- [ ] **P1-6** Implement the daily OEE hierarchy:
-  `GET /v1/factories/{factory}/lines/{line}/machines/{machine}/daily-oee`
-  and `.../{production_day}`.
+- [ ] **P1-6** Implement daily OEE at
+  `GET /v1/equipment/{equipment_id}/daily-oee` with optional
+  `factory_code` and `line_code` filters. If a hierarchy path is required,
+  resolve it through `Equipment` fields instead of creating `Factory` or
+  `Line` entities.
 - [ ] **P1-7** Add a DTO mapping layer from Vietnamese pandas columns and Influx
   fields to stable English API fields.
 - [ ] **P1-8** Replace display-name tags with stable factory/line/machine IDs;
   expose display names as fields.
 - [ ] **P1-9** Define the `Idempotency-Key` header and auth scopes in the
   OpenAPI contract.
-- [ ] **P1-10** Delete `postgres/writers/daily_production_reports.py` and update
-  `AGENTS.md`.
+- [ ] **P1-10** Update `postgres/writers/daily_production_reports.py` for
+  `equipment_id` and the fixed two-shift model; update `AGENTS.md`. Decide
+  separately whether to wire it into the API.
 - [ ] **P1-11** Mark `/excel/read`, `/excel/upload`, and `/daily` deprecated with
   `Deprecation`, `Sunset`, and successor `Link` headers.
 
@@ -292,7 +298,7 @@ tests are part of CI or a documented runbook.
 | OD-3 | Browser token flow | PKCE in SPA / backend-for-frontend | Phase 2 | TBD |
 | OD-4 | Deployment target | Docker VM / Kubernetes / existing platform | Phases 2-3 | TBD |
 | OD-5 | PII scope | Dedicated `quality.pii.read` / broad `admin` | Phase 2 | TBD |
-| OD-6 | Production-day config storage | Props file / database / per-line config service | Phase 0 | TBD |
+| OD-6 | Production-day config storage | Resolved: fixed `07:00` company-wide | Phase 0 | Resolved |
 | OD-7 | Legacy endpoint sunset | Remove after `/v1` / one release cycle | Phase 1 | TBD |
 
 ---
@@ -301,7 +307,7 @@ tests are part of CI or a documented runbook.
 
 - Frontend dashboard implementation.
 - Replacing InfluxDB or redesigning the time-series schema.
-- Repairing the deleted Postgres report writer.
+- Wiring the kept Postgres report writer into the public `/v1` API.
 - gRPC for the public dashboard API.
 
 ---

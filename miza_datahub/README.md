@@ -90,7 +90,18 @@ Cách trực quan nhất để xác nhận việc liên kết và thực thi scr
 
 1. Mở công cụ quản lý database và kết nối vào database của bạn (ví dụ `miza_db`).
 2. Kiểm tra xem có xuất hiện bảng lịch sử **`alembic_version`** hay không. Bảng này do Alembic tự động tạo ra để lưu mã revision hiện tại của database.
-3. Kiểm tra xem 2 bảng mới đã được tạo đúng cấu trúc từ đoạn code trên chưa:
+3. Kiểm tra các bảng đã được tạo đúng cấu trúc:
+* **`equipment`**, **`paper_grades`**, **`crews`**, **`crew_schedules`**
 * **`daily_production_reports`**
-* **`downtime_events`** (Kiểm tra xem bảng này đã được chuyển thành TimescaleDB Hypertable chưa bằng cách chạy câu lệnh SQL: `SELECT * FROM timescaledb_information.hypertables;`).
+* **`downtime_events`** (Kiểm tra bảng đã được chuyển thành TimescaleDB Hypertable chưa bằng câu lệnh SQL: `SELECT * FROM timescaledb_information.hypertables;`).
+
+### Production day and shifts
+
+- Ngày sản xuất bắt đầu lúc `07:00` theo múi giờ `Asia/Ho_Chi_Minh`.
+- Ca 1: `07:00-19:00`; Ca 2: `19:00-07:00` ngày hôm sau.
+- `shift_no` là value object (`1` hoặc `2`); không còn bảng `production_shifts`.
+- `daily_production_reports` unique theo `(report_date, shift_no, equipment_id)`.
+- `downtime_events` tham chiếu `equipment_id`, không có `report_id`.
+
+Dùng `miza_datahub.services.shift_calendar` thay vì hard-code `06:00` hoặc `6h`.
 

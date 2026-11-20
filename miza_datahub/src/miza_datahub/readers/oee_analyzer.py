@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from miza_datahub.readers.base_reader import BaseReader
+from miza_datahub.services import shift_calendar
 from miza_datahub.influxdb.writers.paper_daily_oee_writer import (
     PaperDailyOEEWriter,
 )
@@ -32,7 +33,7 @@ class OEEAnalyzer(BaseReader):
             if not 1 <= current_day <= max_day:
                 continue
 
-            time_str = "06:00:00"
+            time_str = f"{shift_calendar.PRODUCTION_DAY_START_HOUR:02d}:00:00"
 
             current_date = pd.to_datetime(
                 f"{current_day}/{month}/{year}", format="%d/%m/%Y"

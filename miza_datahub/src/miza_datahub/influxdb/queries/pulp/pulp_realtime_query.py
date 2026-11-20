@@ -1,6 +1,6 @@
 from typing import Optional
-from calendar import monthrange
 
+from miza_datahub.services import shift_calendar
 from miza_datahub.services.time_utils import TimeUtils
 from miza_datahub.influxdb.influx_repository import InfluxRepository
 
@@ -30,10 +30,10 @@ class PulpRealtimeQuery(InfluxRepository):
                 WHERE
                     "machine" = 'Total Fiber'
                     AND time >= '{start_time_str}'
-                    AND time <= {end_time_str}
+                    AND time < {end_time_str}
                 GROUP BY time(1h) fill(0)
             )
-            GROUP BY time({interval},6h)
+            GROUP BY time({interval},7h)
             fill(none)
             TZ('Asia/Ho_Chi_Minh')
         """
@@ -44,18 +44,15 @@ class PulpRealtimeQuery(InfluxRepository):
         self, year: int, month: int | None = None, interval: str = "1d"
     ):
         if month is not None:
-            last_day = monthrange(year, month)[1]
-            start_time_str = f"'{year}-{month:02d}-01T06:00:00+07:00'"
-            end_time_str = (
-                f"'{year}-{month:02d}-{last_day}T06:00:00+07:00' + 1d"
-            )
+            start, end = shift_calendar.production_month_range(year, month)
         else:
-            start_time_str = f"'{year}-01-01T06:00:00+07:00'"
-            end_time_str = f"'{year+1}-01-01T06:00:00+07:00'"
+            start, end = shift_calendar.production_year_range(year)
+        start_time_str = f"'{start.isoformat()}'"
+        end_time_str = f"'{end.isoformat()}'"
 
         if interval == "1d":
             group_by = f"""
-                GROUP BY time({interval}, 6h)
+                GROUP BY time({interval}, 7h)
             """
         else:
             group_by = ""
@@ -79,7 +76,7 @@ class PulpRealtimeQuery(InfluxRepository):
                 WHERE
                     "machine" = 'Total Fiber'
                     AND time >= {start_time_str}
-                    AND time <= {end_time_str}
+                    AND time < {end_time_str}
                 GROUP BY time(1h) fill(0)
             )
             {group_by}
